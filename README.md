@@ -5,8 +5,8 @@ The following is code to run analyses and generate figures from [Marshall et al.
 ## Scripts in repository
 
 - **Examining topologies of gene trees:**
-    - Calculating Robinson-Foulds distances among gene trees ([functions](REFER) and [analysis script](REFER))
-    - Visualizing results ([Fig. X](REFER))
+    - Calculating Robinson-Foulds distances among gene trees ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists_analysis.R))
+    - Visualizing results ([Fig. X](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/RFdists_figure.R))
 
 - **GWAS analysis:**
     - Running the GWAS itself ([script](REFER))
