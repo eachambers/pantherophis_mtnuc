@@ -1,18 +1,21 @@
 # pantherophis_mtnuc
 
-The following is code to run analyses and generate figures from [Marshall et al. (XXX)](REFER). Raw data files are provided on Dryad [here](https://datadryad.org/XXX). In all cases, functions are provided in the R directory, while walkthroughs of how the functions were used are in Markdown format.
+The following is code to run analyses and generate figures from [Marshall et al. (XXX)](REFER). Raw data files are provided on Dryad [here](https://datadryad.org/XXX). The structure of this repository is that scripts are divided into those that perform analyses ([here](https://github.com/eachambers/pantherophis_mtnuc/tree/main/analysis)) and data visualizations ([here](https://github.com/eachambers/pantherophis_mtnuc/tree/main/data_viz)).
 
-## Data analysis
+## Scripts in repository
 
-Matching outlier SNPs (from GWAS analysis) with those in NMT genes:
-* [Walkthrough](REFER)
-* [Functions](REFER)
+- **Examining topologies of gene trees:**
+    - Calculating Robinson-Foulds distances among gene trees ([functions](REFER) and [analysis script](REFER))
+    - Visualizing results ([Fig. X](REFER))
 
-## Data visualization
+- **GWAS analysis:**
+    - Running the GWAS itself ([script](REFER))
+    - Processing GWAS results and getting summary statistics ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS_analysis.R))
+    - Visualizing results ([Fig. X](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/GWAS_figures.R))
 
-Manhattan plot
-I. Analysis 1 (Fig. X)
-* [Portion of analysis](REFER)
-
-II. Analysis 2 (Fig. X)
-* [Portion of analysis](REFER)
+- **Fixed differences:**
+    - Calculating fixed differences ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Fixeddiff.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Fixeddiff_analysis.R))
+    - Visualizing results ([Fig. X](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Fixeddiff_figures.R))
+ 
+- **ABBA-BABA analysis:**
+    - Visualizing results ([Fig. X](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
