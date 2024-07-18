@@ -9,7 +9,6 @@ library(padr)
 ##    FILES REQUIRED:
 ##          Results from the GWAS analysis (25 RData files)
 ##          Coordinates for the NMT and control genes of interest (NMT_coords.txt & controls_coords.txt)
-##          N.B.: Relevant functions are in the GWAS.R script
 
 ##    STRUCTURE OF CODE:
 ##              (1) Process NMT and control data
@@ -17,15 +16,15 @@ library(padr)
 ##              (3) Merge GWAS results with NMT and control data, exporting sig SNPs
 ##              (4) Get summary statistics
 
+# Load relevant functions
 source(here("analysis", "GWAS.R"))
-setwd("~/Box Sync/Lampropeltis project/PANTHEROPHIS_introgression")
 
 
 # (1) Process NMT and control data ----------------------------------------
 
 # NMT and control files only have ranges so we need to pad data such that
 # each position is assigned a row in the dataframe
-nmts <- read_tsv("Gene_trees/Nmt_coords.txt", col_names = FALSE) %>% 
+nmts <- read_tsv(here("data", "Nmt_coords.txt"), col_names = FALSE) %>% 
   rename(seqname = X1, gene = X2) %>% 
   separate(col = seqname, into = c("chrom", "number"), sep = "\\:") %>% # may want to check that col has unique entries for each row `nrow(nmts) == length(unique(nmts$number))` before moving to next line
   separate(col = number, into = c("start", "end"), sep = "-")
@@ -50,7 +49,7 @@ nmt_gathered <-
   dplyr::select(-pos_name) %>% 
   mutate(category = "NMT")
 
-cont <- read_tsv("Gene_trees/controls_coords.txt", col_names = FALSE) %>% 
+cont <- read_tsv(here("data", "controls_coords.txt"), col_names = FALSE) %>% 
   rename(seqname = X1, gene = X2) %>% 
   separate(col = seqname, into = c("chrom", "number"), sep = "\\:") %>% # may want to check that col has unique entries for each row `nrow(nmts) == length(unique(nmts$number))` before moving to next line
   separate(col = number, into = c("start", "end"), sep = "-")
@@ -80,7 +79,7 @@ cont_gathered <-
 
 # Iterate through all the RData files, read them in, calculate which SNPs are 
 # significant, and export these data as a single file
-files <- list.files("GWAS/", pattern = "RData")
+files <- list.files(here("data"), pattern = "RData")
 file_no <- 1:length(files)
 
 dat <-
@@ -93,7 +92,7 @@ dat <-
   dplyr::bind_rows()
 
 # Save GWAS results for all SNPs
-write_tsv(dat, here("GWAS", "GWAS_results.txt"), col_names = TRUE)
+write_tsv(dat, here("data", "GWAS_results.txt"), col_names = TRUE)
 
 # Retrieve only significant outliers based on two alpha thresholds
 # sig_snps_0.01 <- dat %>%

@@ -1,33 +1,28 @@
 library(here)
 library(tidyverse)
 library(cowplot)
-library(gt)
-library(gtExtras)
 theme_set(theme_cowplot())
 
-## The following code generates Fig. XX, the Manhattan plot of GWAS results, as well as
-## mean p-values per gene per chromosome for outliers.
+## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S2), 
+## and calculates mean p-values per gene per chromosome for outliers.
 
 ##    FILES REQUIRED:
-##          Significant SNPs for NMT and control genes ("GWAS_control_sigsnps_0.05.txt" & "GWAS_NMT_sigsnps_0.05.txt"), generated using `GWAS_analysis.R`
+##          Significant SNPs for NMT and control genes ("GWAS_control_sigsnps_*.txt" & "GWAS_NMT_sigsnps_*.txt"), generated using `GWAS_analysis.R`
 ##          Non-significant SNPs from GWAS analysis ("GWAS_results.txt"), generated using `GWAS_analysis.R`
-##          `cont_gathered` and `nmt_gathered` from GWAS_analysis.R script
+##          `cont_gathered` and `nmt_gathered` objects from GWAS_analysis.R script
 
 ##    STRUCTURE OF CODE:
 ##              (1) Read in NMT and control gene data and merge them for plotting
-##              (2) Read in non-significant GWAS SNPs
-##              (3) Build Manhattan plot (Fig. XX)
-##              (4) Build nice table of results
-##              (5) Build mean p-values for genes (Fig. XX)
-
-setwd("~/Box Sync/Lampropeltis project/PANTHEROPHIS_introgression")
+##              (2) Build mean p-values for genes (Fig. 3A)
+##              (3) Read in non-significant GWAS SNPs
+##              (4) Build Manhattan plot (Fig. S2)
 
 
 # (1) Read in NMT and control gene data -----------------------------------
 
 # If continuing from GWAS_analysis.R script, no need to import the following files
-contdat <- read_tsv("GWAS/GWAS_control_sigsnps_0.05.txt", col_names = TRUE)
-nmtdat <- read_tsv("GWAS/GWAS_NMT_sigsnps_0.05.txt", col_names = TRUE)
+contdat <- read_tsv(here("data", "GWAS_control_sigsnps_0.05.txt"), col_names = TRUE)
+nmtdat <- read_tsv(here("data", "GWAS_NMT_sigsnps_0.05.txt"), col_names = TRUE)
 
 # Combine cont and nmts together so they aren't double-plotted
 contdat <- contdat %>% 
@@ -37,106 +32,7 @@ nmtdat <- nmtdat %>%
 sig_snps <- full_join(contdat, nmtdat) # 954,013 if alpha=0.05
 
 
-# (2) Read in non-sig GWAS SNPs -------------------------------------------
-
-# If continuing from GWAS_analysis.R script, no need to import the following file
-dat <- read_tsv("GWAS/GWAS_results.txt", col_names = TRUE)
-alpha = 0.05
-nonsig_snps <-
-  dat %>% 
-  dplyr::filter(signed.logp < -log10(alpha)) # 25,263,575 at alpha=0.05
-
-# Now, categorize nonsig snps that are in NMTs and control genes
-# `nmt_gathered` and `cont_gathered` are from GWAS_analysis.R script
-nonsig_snps <- left_join(nonsig_snps, nmt_gathered) %>% 
-  dplyr::select(chrom, pos, zscore, pos.Mb, signed.logp, r2, category) %>%
-  distinct() %>%
-  replace_na(list(category = "non-NMT")) %>% 
-  dplyr::rename(nmt_cat = category)
-
-nonsig_snps <- left_join(nonsig_snps, cont_gathered) %>% 
-  dplyr::select(chrom, pos, zscore, pos.Mb, signed.logp, r2, nmt_cat, category) %>%
-  distinct() %>%
-  replace_na(list(category = "non-control")) %>% 
-  dplyr::rename(cont_cat = category)
-
-# Get stats
-nonsig_snps %>% dplyr::filter(nmt_cat == "NMT") %>% count() # 36,045 at alpha=0.05
-nonsig_snps %>% dplyr::filter(cont_cat == "cont") %>% count() # 152,351 at alpha=0.05
-
-# Verify that there are no SNPs that are categorized as both NMT and controls:
-nonsig_snps %>% dplyr::filter(nmt_cat == "NMT" & cont_cat == "cont") # should have 0 rows
-
-
-# (3) Build Manhattan plot ------------------------------------------------
-
-# Determine max y value
-max_y = max(sig_snps$signed.logp)
-thresh_y = max_y+max_y*0.05
-min_y = min(nonsig_snps$signed.logp)
-
-# For simplicity, let's only plot a single chromosome that contains both N-mts and control outliers:
-sig_stats <-
-  sig_snps %>% 
-  dplyr::filter(cont_cat == "cont" | nmt_cat == "NMT") %>% 
-  group_by(chrom, nmt_cat, cont_cat) %>% 
-  count()
-
-# Combine cat cols into a single col
-sig_snps <-
-  sig_snps %>% 
-  dplyr::mutate(status = case_when(nmt_cat == "NMT" ~ "sig_NMT",
-                                   cont_cat == "cont" ~ "sig_cont",
-                                   nmt_cat == "non-NMT" & cont_cat == "non-control" ~ "sig_neither"))
-nonsig_snps <-
-  nonsig_snps %>% 
-  dplyr::mutate(status = case_when(nmt_cat == "NMT" ~ "nonsig_NMT",
-                                   cont_cat == "cont" ~ "nonsig_cont",
-                                   nmt_cat == "non-NMT" & cont_cat == "non-control" ~ "nonsig_neither"))
-
-# Interesting chroms for us to look at: NW_023010694.1, NW_023010706.1, NW_023010796.1, NW_023010908.1
-chrom = "NW_023010694.1"
-
-p <-
-  sig_snps %>% 
-  dplyr::filter(chrom == chrom) %>% 
-  ggplot(aes(x = pos.Mb, y = signed.logp, color = status)) +
-  geom_point(size = 0.25, alpha = 0.25) +
-  ylab("-log10(p-value)") +
-  xlab("position (Mb)") +
-  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
-  scale_y_continuous(expand = c(0,0), limits = c(0, thresh_y)) +
-  scale_x_continuous(expand = c(0,0))
-
-p +
-  geom_point(data = nonsig_snps %>% 
-               dplyr::filter(chrom == chrom), size = 0.25, alpha = 0.25) +
-  ylab("-log10(p-value)") +
-  xlab("position (Mb)") +
-  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
-  theme(legend.position = "none") +
-  scale_color_manual(values = c("sig_neither" = "darkgrey", "sig_NMT" = "brown", "sig_cont" = "skyblue4",
-                                "nonsig_neither" = "lightgrey", "nonsig_NMT" = "brown2", "nonsig_cont" = "skyblue1")) # export 6x3
-
-
-# (4) Build nice table of sig SNPs ----------------------------------------
-
-d <- max(abs(min(sig_snps$signed.logp)), abs(max(sig_snps$signed.logp)))
-
-sig_snps_subset <-
-  sig_snps %>%
-  dplyr::filter(chrom %in% cont_sig$chrom | chrom %in% nmt_sig$chrom) %>% 
-  arrange(desc(signed.logp)) %>% 
-  top_n(n = 50, wt = signed.logp)
-
-min <- abs(min(sig_snps_subset$signed.logp))
-max <- abs(max(sig_snps_subset$signed.logp))
-sig_snps_subset %>% 
-  gt::gt() %>% 
-  gtExtras::gt_hulk_col_numeric(signed.logp, trim = TRUE, domain = c(-max, max))
-
-
-# (5) Build figure with mean significance values per gene -----------------
+# (2) Build figure with mean significance values per gene -----------------
 
 # Retrieve p-values for Nmts and max per-gene mean p-value
 nmt_vals <-
@@ -216,3 +112,88 @@ dat %>%
   scale_color_manual(values = c("other" = "darkgrey", "nmt" = "brown", "cont" = "skyblue4")) +
   ylab("Mean -log10(p-value)") +
   xlab("Scaffold") # export 10x5
+
+
+# (3) Read in data for Manhattan plot -------------------------------------
+
+# If continuing from GWAS_analysis.R script, no need to import the following files
+gwas <- read_tsv(here("data", "GWAS_results.txt"), col_names = TRUE)
+contdat <- read_tsv(paste0(here("data"), "/GWAS_control_sigsnps_", alpha, ".txt"), col_names = TRUE)
+nmtdat <- read_tsv(paste0(here("data"), "/GWAS_NMT_sigsnps_", alpha, ".txt"), col_names = TRUE)
+
+alpha = 0.01
+
+# Combine cont and nmts together so they aren't double-plotted
+contdat <- contdat %>% 
+  dplyr::rename(cont_cat = category)
+nmtdat <- nmtdat %>% 
+  dplyr::rename(nmt_cat = category)
+sig_snps <- full_join(contdat, nmtdat) %>% # 954,013 if alpha=0.05; 144,823 if alpha=0.01
+  dplyr::mutate(category = case_when(nmt_cat == "NMT" ~ "NMT",
+                                     cont_cat == "cont" ~ "control",
+                                     nmt_cat == "non-NMT" & cont_cat == "non-control" ~ "other")) %>% 
+  dplyr::select(-c(nmt_cat, cont_cat))
+
+# Let's only look at most significantly associated mean genes (from above analysis)
+mostsig <- read_tsv(here("data", "top_sig_chroms.txt"), col_names = TRUE)
+mostsigchroms <- unique(mostsig$chrom)
+
+# Extract above scaffolds from GWAS results
+subset <-
+  gwas %>% 
+  dplyr::filter(chrom %in% mostsigchroms) # 1,846,955 obs
+
+# Assign categories to the subset data according to outliers and categories
+# We want SNPs to be categorized only if they're below set p-value and
+# we want to categorize them based on whether they belong in N-mt genes, 
+# control genes, or elsewhere
+nonsigsubset <-
+  subset %>% 
+  dplyr::filter(signed.logp < -log10(alpha)) # 1,827,678 obs
+
+sigsubset <-
+  sig_snps %>% 
+  dplyr::filter(chrom %in% mostsigchroms) # 19,277 obs
+
+
+# (4) Build Manhattan plot ------------------------------------------------
+
+axis_set <- nonsigsubset %>% 
+  group_by(chrom) %>% 
+  summarize(center = mean(pos))
+
+# Set levels
+sigsubset$chrom <- factor(sigsubset$chrom, levels = (unique(sigsubset$chrom)))
+
+p_sig <-
+  ggplot() +
+  geom_point(data = sigsubset %>% filter(category == "other"), aes(x = pos, y = signed.logp), col = "thistle", size = 1.4, alpha = 0.75) +
+  xlab(NULL) +
+  ylab("-log(p-value)") +
+  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
+  scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, (max(sigsubset$signed.logp) + 0.25))) +
+  geom_point(data = sigsubset %>% filter(category != "other"), aes(x = pos, y = signed.logp, col = category), size = 1.4, alpha = 0.75) +
+  scale_color_manual(values = c("NMT" = "brown", "control" = "skyblue4")) +
+  geom_point(data = nonsigsubset, aes(x = pos, y = signed.logp, col = chrom), size = 1.4, alpha = 0.75) +
+  scale_color_manual(values = rep(c("grey54","lightgrey"), ceiling(length(unique(sigsubset$chrom))/2))[1:length(unique(sigsubset$chrom))]) +
+  theme(axis.text.x = element_text(angle = 60, size = 4, vjust = 0.5))
+
+p <-
+  ggplot() +
+  geom_point(data = nonsigsubset, aes(x = pos, y = signed.logp), col = "grey", size = 1.4, alpha = 0.75) +
+  ylab("-log(p-value)") +
+  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, (max(sigsubset$signed.logp) + 0.25))) +
+  # scale_color_manual(values = rep(c("grey54","lightgrey"), ceiling(length(unique(nonsigsubset$chrom))/2))[1:length(unique(nonsigsubset$chrom))]) +
+  # xlab(NULL) +
+  # scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
+  # theme(axis.text.x = element_text(angle = 60, size = 4, vjust = 0.5)) +
+  facet_grid(~chrom, scales = "free_x")
+
+p +
+  geom_point(data = sigsubset %>% filter(category == "other"), aes(x = pos, y = signed.logp), col = "tan1", size = 1.4, alpha = 0.75) +
+  geom_point(data = sigsubset %>% filter(category != "other"), aes(x = pos, y = signed.logp, col = category), size = 1.4, alpha = 0.75) +
+  scale_color_manual(values = c("NMT" = "brown", "control" = "skyblue4")) +
+  theme(axis.text.x = element_blank(),
+        axis.ticks.x = element_blank())

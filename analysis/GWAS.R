@@ -127,5 +127,4 @@ gwas_manhattan <- function(gwas, regions, sig, color_block, subdivide = TRUE, su
   p +
     geom_rect(data = nmt_divide, aes(xmin = nmt_divide$start_mb, xmax = nmt_divide$end_mb, ymin = 0, ymax = pmax),
               fill = "lightgreen", alpha = 0.5)
-
 }

@@ -5,14 +5,14 @@ library(grid)
 library(gridExtra)
 theme_set(theme_cowplot())
 
-## The following code creates Figs. 3b and c.
+## The following code creates Figs. 3C and 3D.
 
 ##    FILES REQUIRED:
 ##          RData objects with allele freqs for:
 ##              - Control loci (freq_data_cont.rda)
 ##              - Nmts (freq_data_nmts.rda)
-##          Fixed difference summary files, one for each threshold (e.g., "summary_cont_0.5.txt)
-##          Top significantly associated chromosomes ("top_sig_chroms.txt") from GWAS_figures.R script
+##          Diagnostic difference summary files, one for each threshold (e.g., "summary_cont_0.5.txt)
+##          Top significantly associated chromosomes ("top_sig_chroms.txt") from `GWAS_figures.R` script
 
 ##    STRUCTURE OF CODE:
 ##              (1) Load input data
@@ -21,15 +21,13 @@ theme_set(theme_cowplot())
 ##              (4) Build summary bar plots for Nmts and control genes (Fig. XX)
 ##              (5) Bar plots for specific chromosomes (Fig. XX)
 
-setwd("~/Box Sync/Lampropeltis project/PANTHEROPHIS_introgression")
-
 
 # (1) Load input data -----------------------------------------------------
 
 threshold = 0.5
-load(file = paste0("Fixed_diffs/freq_data_cont_", threshold, ".rda")) # will load as freqs
+load(file = paste0(here("data"), "/freq_data_cont_", threshold, ".rda")) # will load as freqs
 freqs_cont <- freqs
-load(file = paste0("Fixed_diffs/freq_data_nmts_", threshold, ".rda")) # will load as freqs
+load(file = paste0(here("data"), "/freq_data_nmts_", threshold, ".rda")) # will load as freqs
 freqs_nmts <- freqs
 
 
@@ -56,6 +54,8 @@ tidy_freqs <- function(freqs) {
 tidy_cont <- tidy_freqs(freqs_cont)
 tidy_nmts <- tidy_freqs(freqs_nmts)
 
+
+# TODO which of the following figs did we actually keep?
 
 # (3) Build barplot for each SNP ------------------------------------------
 
@@ -97,11 +97,11 @@ xlab <- textGrob("Position (SNP)",
 grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 10x8
 
 
-# (4) Build summarized barplots -------------------------------------------
+# (4) Build Fig. 3C: summarized barplots -------------------------------------------
 
 ## Import the summary data
-files <- intersect(list.files("Fixed_diffs", pattern = c("summary"), full.names = TRUE),
-                   list.files("Fixed_diffs", pattern = c("0.5"), full.names = TRUE))
+files <- intersect(list.files(here("data"), pattern = c("summary"), full.names = TRUE),
+                   list.files(here("data"), pattern = c("0.5"), full.names = TRUE))
 
 file_nos <- 1:length(files)
 dat <-
@@ -194,10 +194,10 @@ dat %>%
   ylab("Proportion of SNPs") # export 3x3
 
 
-# (5) Barplots for specific chromosomes -----------------------------------
+# (5) Fig. 3D: Barplots for specific chromosomes -----------------------------------
 
 # Read in top chromosome results from GWAS results
-top_chroms <- read_tsv("GWAS/top_sig_chroms.txt", col_names = TRUE)
+top_chroms <- read_tsv(here("data", "top_sig_chroms.txt"), col_names = TRUE)
 chroms <- top_chroms %>% dplyr::select(chrom) %>% distinct()
 
 cont <-
