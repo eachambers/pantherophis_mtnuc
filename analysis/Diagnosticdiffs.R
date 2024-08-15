@@ -101,15 +101,16 @@ allele_dict <- function(dataset, dataset_name, save_file = TRUE, output_path) {
 #'
 #' @return
 #' @export
-freq_data <- function(dataset, dataset_name, pure_allele_dict, threshold, save_file = TRUE, output_path) {
-  dataset %>% 
+freq_data <- function(dataset, dataset_name, pure_allele_dict, threshold, save_file = FALSE, output_path) {
+  freqs <-
+    dataset %>% 
     tidyr::pivot_longer(names_to = "locus", values_to = "value", cols = -c(INDV, mitotype)) %>%
     dplyr::filter(value != 'N') %>% 
     dplyr::inner_join(pure_allele_dict, by = "locus") %>% 
     dplyr::group_by(mitotype, locus) %>% 
     dplyr::summarize(frac_emoryi = sum(value == emoryi)/n(),
                      frac_slow = sum(value == slowinskii)/n(),
-                     frac_het = sum(value == het)/n()) -> freqs
+                     frac_het = sum(value == het)/n())
   
   summary <-
     freqs %>% 
@@ -127,5 +128,41 @@ freq_data <- function(dataset, dataset_name, pure_allele_dict, threshold, save_f
     readr::write_tsv(summary, file = paste0(output_path, "summary_", dataset_name, "_", threshold, ".txt"))
   }
   
-  return(list(freqs = freq_data, summary = summary))
+  return(list(freqs = freqs, summary = summary))
+}
+
+ind_stats <- function(nmts, cont, pure_allele_dict_nmts, pure_allele_dict_cont) {
+  # Calculate individual-based differences in proportions for emp stat test
+  ind_stats_nmts <- ind_stats_helper(dataset = nmts, 
+                                     pure_allele_dict = pure_allele_dict_nmts, 
+                                     genes = "nmts")
+  ind_stats_cont <- ind_stats_helper(dataset = cont, 
+                                     pure_allele_dict = pure_allele_dict_cont, 
+                                     genes = "cont")
+  
+  # Bind into single df and calculate stats
+  ind_stats <- bind_rows(ind_stats_nmts, ind_stats_cont) %>% 
+    group_by(INDV, mitotype) %>% 
+    mutate(frac_match = case_when(mitotype == "slowinskii" ~ frac_slow,
+                                  mitotype == "emoryi" ~ frac_emoryi)) %>% 
+    dplyr::select(-c(frac_emoryi, frac_slow, frac_het)) %>% 
+    pivot_wider(names_from = gene_set, values_from = frac_match) %>% 
+    mutate(prop_diff_ind = nmts-cont)
+  
+  return(ind_stats)
+}
+
+ind_stats_helper <- function(dataset, pure_allele_dict, genes) {
+  ind_stats <-
+    dataset %>% 
+    tidyr::pivot_longer(names_to = "locus", values_to = "ind_locus_value", cols = -c(INDV, mitotype)) %>%
+    dplyr::filter(ind_locus_value != 'N') %>% 
+    dplyr::inner_join(pure_allele_dict, by = "locus") %>% 
+    dplyr::group_by(INDV, mitotype) %>% 
+    dplyr::summarize(frac_emoryi = sum(ind_locus_value == emoryi)/n(),
+                     frac_slow = sum(ind_locus_value == slowinskii)/n(),
+                     frac_het = sum(ind_locus_value == het)/n()) %>% 
+    dplyr::mutate(gene_set = genes)
+  
+  return(ind_stats)
 }

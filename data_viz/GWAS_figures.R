@@ -75,7 +75,7 @@ dat <- bind_rows(cont_sig, nmt_sig, chrom_means)
 dat %>% 
   filter(mean_pval > 2) %>% 
   arrange(desc(mean_pval)) %>% 
-  write_tsv(file = "GWAS/top_sig_chroms.txt", col_names = TRUE)
+  write_tsv(file = here("data", "top_sig_chroms.txt"), col_names = TRUE)
 
 top_nmts <- dat %>% 
   filter(mean_pval > 2) %>% 
@@ -92,13 +92,13 @@ nmt_gathered %>%
   dplyr::filter(gene_group %in% top_nmts$gene_group) %>% 
   dplyr::select(-pos) %>% 
   distinct() %>% 
-  write_tsv(file = "GWAS/top_nmts.txt", col_names = TRUE)
+  write_tsv(file = here("data", "top_nmts.txt"), col_names = TRUE)
 
 cont_gathered %>% 
   dplyr::filter(gene_group %in% top_cont$gene_group) %>% 
   dplyr::select(-pos) %>% 
   distinct() %>% 
-  write_tsv(file = "GWAS/top_cont.txt", col_names = TRUE)
+  write_tsv(file = here("data", "top_cont.txt"), col_names = TRUE)
 
 dat %>% 
   ggplot(aes(x = chrom, y = mean_pval, color = dataset)) +

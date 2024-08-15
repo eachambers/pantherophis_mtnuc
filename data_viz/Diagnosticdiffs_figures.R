@@ -9,26 +9,23 @@ theme_set(theme_cowplot())
 
 ##    FILES REQUIRED:
 ##          RData objects with allele freqs for:
-##              - Control loci (freq_data_cont.rda)
-##              - Nmts (freq_data_nmts.rda)
-##          Diagnostic difference summary files, one for each threshold (e.g., "summary_cont_0.5.txt)
+##              - Control loci (freq_data_cont_ldp.rda)
+##              - Nmts (freq_data_nmts_ldp.rda)
+##          Diagnostic difference summary files, one for each threshold (e.g., "summary_cont_ldp_0.5.txt)
 ##          Top significantly associated chromosomes ("top_sig_chroms.txt") from `GWAS_figures.R` script
 
 ##    STRUCTURE OF CODE:
 ##              (1) Load input data
 ##              (2) Tidy data
-##              (3) Build bar plot for each SNP (Fig. XX)
-##              (4) Build summary bar plots for Nmts and control genes (Fig. XX)
-##              (5) Bar plots for specific chromosomes (Fig. XX)
+##              (3) Build summary bar plots for Nmts and control genes (Fig. 3C)
+##              (4) Bar plots for specific chromosomes (Fig. 3D)
 
 
 # (1) Load input data -----------------------------------------------------
 
 threshold = 0.5
-load(file = paste0(here("data"), "/freq_data_cont_", threshold, ".rda")) # will load as freqs
-freqs_cont <- freqs
-load(file = paste0(here("data"), "/freq_data_nmts_", threshold, ".rda")) # will load as freqs
-freqs_nmts <- freqs
+load(file = paste0(here("data"), "/freq_data_cont_ldp_", threshold, ".rda"))
+load(file = paste0(here("data"), "/freq_data_nmts_ldp_", threshold, ".rda"))
 
 
 # (2) Tidy data -----------------------------------------------------------
@@ -51,61 +48,18 @@ tidy_freqs <- function(freqs) {
   return(tidy_dat)
 }
 
-tidy_cont <- tidy_freqs(freqs_cont)
-tidy_nmts <- tidy_freqs(freqs_nmts)
+tidy_cont <- tidy_freqs(freqs_to_plot_cont)
+tidy_nmts <- tidy_freqs(freqs_to_plot_nmts)
 
 
-# TODO which of the following figs did we actually keep?
-
-# (3) Build barplot for each SNP ------------------------------------------
-
-p_cont <-
-  tidy_cont %>% 
-  ggplot(aes(x = locus, y = summed_prop, fill = status)) +
-  geom_bar(position = "stack", stat = "identity") +
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_blank(),
-        legend.position = "none") +
-  scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
-                    labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
-  scale_y_continuous(expand = c(0,0)) +
-  ggtitle("Control loci")
-
-p_nmts <-
-  tidy_nmts %>% 
-  ggplot(aes(x = locus, y = summed_prop, fill = status)) +
-  geom_bar(position = "stack", stat = "identity") +
-  theme(axis.text = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title = element_blank(),
-        legend.position = "none") +
-  scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
-                    labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
-  scale_y_continuous(expand = c(0,0)) +
-  ggtitle("NMTs")
-
-plots <- cowplot::plot_grid(p_nmts, p_cont, ncol = 1)
-
-# Common x and y labs
-ylab <- textGrob("Proportion of individuals", 
-                   gp = gpar(col = "black", fontsize = 15), rot = 90)
-xlab <- textGrob("Position (SNP)", 
-                   gp = gpar(col = "black", fontsize = 15))
-
-# Add common labels to plot
-grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 10x8
-
-
-# (4) Build Fig. 3C: summarized barplots -------------------------------------------
+# (3) Fig. 3C: summarized barplots ----------------------------------------
 
 ## Import the summary data
 files <- intersect(list.files(here("data"), pattern = c("summary"), full.names = TRUE),
                    list.files(here("data"), pattern = c("0.5"), full.names = TRUE))
 
-file_nos <- 1:length(files)
 dat <-
-  file_nos %>% 
+  1:length(files) %>% 
   lapply(function(x) {
     dat <- read_tsv(files[x], col_names = TRUE)
     slow <-
@@ -125,76 +79,35 @@ dat <-
   }) %>% 
   dplyr::bind_rows()
 
-dat <-
+dattoplot <-
   dat %>% 
-  pivot_longer(names_to = "status", values_to = "SNPs", cols = 2:4)
-dat$status <- factor(dat$status, levels = c("match", "het", "mismatch"))
-
-dat %>% 
-  filter(dataset == "cont") %>% 
-  ggplot(aes(x = mitotype, y = SNPs, fill = status)) +
-  geom_bar(stat = "identity", position = "stack") +
-  scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
-                    labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme(legend.position = "none") +
-  xlab("Mitotype of individual") +
-  ylab("Number of SNPs") # export 3x3
-
-dat %>% 
-  filter(dataset == "nmts") %>% 
-  ggplot(aes(x = mitotype, y = SNPs, fill = status)) +
-  geom_bar(stat = "identity", position = "stack") +
-  scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
-                    labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme(legend.position = "none") +
-  xlab("Mitotype of individual") +
-  ylab("Number of SNPs") # export 3x3
-
-
-# Build proportional bar plots --------------------------------------------
-
-dat <-
-  dat %>% 
-  group_by(dataset, mitotype) %>% 
-  mutate(total_snps = sum(SNPs),
-         prop_snps = SNPs/total_snps)
-
-# Now plot results as grouped barplot
-dat %>% 
-  ggplot(aes(x = dataset, y = prop_snps, fill = status, group = dataset)) +
-  geom_bar(stat = "identity", position = "stack") +
-  scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
-                    labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
-  scale_y_continuous(expand = c(0,0)) +
-  theme(legend.position = "none") +
-  xlab("Mitotype of individual") +
-  ylab("Proportion of SNPs") +
-  facet_grid(~mitotype) # export 3x3
-
-# Not broken up by mitotype, still proportional:
-dat %>% 
+  pivot_longer(cols = match:het, names_to = "category", values_to = "number_sites") %>% 
+  group_by(dataset, category) %>% 
+  mutate(total_number_sites = sum(number_sites)) %>% 
+  dplyr::select(-mitotype) %>% 
   ungroup() %>% 
-  group_by(dataset, status) %>% 
-  mutate(total_snps_all = sum(SNPs)) %>% 
-  ungroup() %>% 
-  dplyr::select(dataset, status, total_snps_all) %>% 
-  distinct() %>% 
   group_by(dataset) %>% 
-  mutate(sum_snps_all = sum(total_snps_all),
-         prop_snps_all = total_snps_all/sum_snps_all) %>% 
-  ggplot(aes(x = dataset, y = prop_snps_all, fill = status)) +
+  mutate(prop_sites = total_number_sites/sum(number_sites)) %>% 
+  dplyr::select(-number_sites) %>% 
+  distinct()
+
+dattoplot$category <- factor(dattoplot$category, levels = c("mismatch", "het", "match"))
+
+dattoplot %>% 
+  ggplot(aes(x = dataset, y = prop_sites, fill = category)) +
   geom_bar(stat = "identity", position = "stack") +
   scale_fill_manual(values = c(het = "lightgrey", match = "#318b84", mismatch = "#b57430"),
                     labels = c(match = "Match", het = "Heterozygous", mismatch = "Mismatch")) +
   scale_y_continuous(expand = c(0,0)) +
-  theme(legend.position = "none") +
-  xlab("Mitotype of individual") +
-  ylab("Proportion of SNPs") # export 3x3
+  theme(legend.position = "none",
+        axis.title.x = element_text(face = "bold", size = 18),
+        axis.title.y = element_text(size = 18),
+        axis.text = element_text(size = 14)) +
+  xlab("Gene category") +
+  ylab("Proportion of SNPs") # export 4x4
 
 
-# (5) Fig. 3D: Barplots for specific chromosomes -----------------------------------
+# (4) Fig. 3D: Barplots for specific chromosomes -----------------------------------
 
 # Read in top chromosome results from GWAS results
 top_chroms <- read_tsv(here("data", "top_sig_chroms.txt"), col_names = TRUE)

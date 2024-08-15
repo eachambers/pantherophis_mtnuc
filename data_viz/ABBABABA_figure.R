@@ -1,88 +1,31 @@
 library(tidyverse)
 library(here)
 library(cowplot)
-library(fuzzyjoin)
+library(scales)
 theme_set(theme_cowplot())
 
-## The following code creates Figure 2B. It also generates summary statistics from the 
-## ABBA-BABA analysis.
+## The following code creates Figures 2B and S2 using the results from the ABBA-BABA analysis.
 
 ##    FILES REQUIRED:
-##          Results from ABBA-BABA analysis (emoryi_slowinskii_guttatus_localFstats__50_25.txt)
-##          Genomic locations for NMT and control genes (Nmt_coords.txt and controls_coords.txt)
+##          Joined_cont.txt and Joined_nmts.txt, produced using `ABBABABA.R`
 
 ##    STRUCTURE OF CODE:
 ##              (1) Import data
-##              (2) Get summary statistics
-##              (3) Build Fig. 2B
+##              (2) Build Fig. 2B
+##              (3) Build Fig. S2
 
 
 # (1) Import data ---------------------------------------------------------
 
-# ABBA-BABA data
-dat <- read_tsv(here("data", "emoryi_slowinskii_guttatus_localFstats__50_25.txt"), col_names = TRUE) # 120,023
-
-# Import Nmt information
-nmts <- read_tsv(here("data", "Nmt_coords.txt"), col_names = FALSE) %>% 
-  separate(col = X1, sep = ":", into = c("chr", "sites")) %>% 
-  separate(col = sites, sep = "-", into = c("start", "end")) %>% 
-  rename(gene = X2)
-nmts$start <- as.numeric(nmts$start)
-nmts$end <- as.numeric(nmts$end) # 167 genes
-
-# Import control gene information
-cont <- read_tsv(here("data", "controls_coords.txt"), col_names = FALSE) %>% 
-  separate(col = X1, sep = ":", into = c("chr", "sites")) %>% 
-  separate(col = sites, sep = "-", into = c("start", "end")) %>% 
-  rename(gene = X2)
-cont$start <- as.numeric(cont$start)
-cont$end <- as.numeric(cont$end) # 142 genes
-
-
-# (2) Get summary statistics ----------------------------------------------
-
-# Get total numbers of SNPs for cont and nmt datasets
-cont %>% 
-  mutate(length = end-start) %>% 
-  summarize(sum(length)) # 10049438
-
-nmts %>% 
-  mutate(length = end-start) %>% 
-  summarize(sum(length)) # 2348450
-
-# Now, let's get a genome-wide mean estimate for fdM for nmts and cont genes
-nmtchr <- unique(nmts$chr) # 74 unique chroms
-nmtdat <- dat %>% filter(chr %in% nmtchr) # reduce dataset size
-nmtjoin <-
-  fuzzyjoin::fuzzy_inner_join(nmts, nmtdat, 
-                              by = c("chr" = "chr",
-                                     "start" = "windowStart",
-                                     "end" = "windowEnd"),
-                              match_fun = list(`==`, `>=`, `<=`))
-write_tsv(nmtjoin, here("ABBABABA", "Joined_nmts.txt"), col_names = TRUE)
-nmtjoin %>% summarize(meanfdM = mean(f_dM),
-                      minfdM = min(f_dM),
-                      maxfdM = max(f_dM)) # 0.0546 mean
-
-contchr <- unique(cont$chr) # 87 unique chroms
-contdat <- dat %>% filter(chr %in% contchr) # reduce dataset size
-contjoin <-
-  fuzzyjoin::fuzzy_inner_join(cont, contdat, 
-                              by = c("chr" = "chr",
-                                     "start" = "windowStart",
-                                     "end" = "windowEnd"),
-                              match_fun = list(`==`, `>=`, `<=`))
-write_tsv(contjoin, here("ABBABABA", "Joined_cont.txt"), col_names = TRUE)
-contjoin %>% summarize(meanfdM = mean(f_dM),
-                      minfdM = min(f_dM),
-                      maxfdM = max(f_dM)) # 0.0607 mean
-
-
-# (3) Build Fig 2B --------------------------------------------------------
+contjoin <- read_tsv(here("data", "Joined_cont.txt"), col_names = TRUE)
+nmtjoin <- read_tsv(here("data", "Joined_nmts.txt"), col_names = TRUE)
 
 contjoin <- contjoin %>% mutate(dataset = "control")
 nmtjoin <- nmtjoin %>% mutate(dataset = "nmt")
 joined <- bind_rows(contjoin, nmtjoin)
+
+
+# (2) Build Fig 2B --------------------------------------------------------
 
 joined %>% 
   ggplot(aes(x = dataset, y = f_dM)) +
@@ -91,19 +34,16 @@ joined %>%
   ylab("Mean fdM") # export 5x5
 
 
-# Build topology results --------------------------------------------------
+# (3) Build Fig S2 --------------------------------------------------------
 
-library(scales)
 dat <- data.frame(topology = c("BBAA", "ABBA", "BABA"),
                   score = c(1.59484e+06, 1.06098e+06, 519655))
 
 dat %>% 
   ggplot(aes(x = topology, y = score)) + 
-  # geom_point() + 
   geom_bar(stat = "identity") +
   scale_y_continuous(label = comma) +
   ylab("Shared derived alleles") +
   xlab("Topology") +
   theme(axis.text = element_text(size = 20),
-        axis.title = element_text(size = 25))
-  # export 5x5 - try 6.4x6.4
+        axis.title = element_text(size = 25)) # export 6.4x6.4
