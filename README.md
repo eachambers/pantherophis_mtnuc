@@ -14,8 +14,8 @@ The following is code to run analyses and generate figures from [Marshall et al.
     - Visualizing results ([Fig. 3A & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/GWAS_figures.R))
 
 - **Diagnostic differences:**
-    - Calculating diagnostic differences ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Fixeddiff.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Fixeddiff_analysis.R))
-    - Visualizing results ([Figs. 3C & 3D](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Fixeddiff_figures.R))
+    - Calculating diagnostic differences ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs_analysis.R))
+    - Visualizing results ([Figs. 3C & 3D](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
  
 - **ABBA-BABA analysis:**
     - Calculating mean fdM in sliding windows from ABBA-BABA results [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R)
