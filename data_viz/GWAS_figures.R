@@ -3,7 +3,7 @@ library(tidyverse)
 library(cowplot)
 theme_set(theme_cowplot())
 
-## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S2), 
+## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S3), 
 ## and calculates mean p-values per gene per chromosome for outliers.
 
 ##    FILES REQUIRED:
