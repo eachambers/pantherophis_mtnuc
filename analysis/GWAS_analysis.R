@@ -2,6 +2,7 @@ library(here)
 library(tidyverse)
 library(fuzzyjoin)
 library(padr)
+library(GWASTools) # BiocManager::install("GWASTools")
 
 ## The following code processes results from the GWAS analysis and merges these with the NMT and
 ## control genes.

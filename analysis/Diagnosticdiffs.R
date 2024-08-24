@@ -10,11 +10,8 @@ process_seq <- function(vcf_file, fasta_file, mitotypes) {
   vcf <- vcfR::read.vcfR(vcf_file)
   
   # Get ordering of inds from vcf
-  names <- colnames(vcf@gt[,-1])
-  names <- as.data.frame(names) %>% 
-    tidyr::separate(names, into = c("INDV", "sorted", "dedup", "filetype"), sep = "_") %>% 
-    dplyr::select(-sorted, -dedup, -filetype)
-  
+  names <- names_helper(vcf)
+
   # Get chromosome and position IDs from vcf
   chroms <- as.data.frame(vcf@fix[,1]) %>% 
     dplyr::rename(CHROM = 1)
@@ -35,6 +32,19 @@ process_seq <- function(vcf_file, fasta_file, mitotypes) {
   return(results)
 }
 
+#' Helper function to retrieve sample IDs from vcf
+#'
+#' @param vcf 
+#'
+#' @return list of names
+#' @export
+names_helper <- function(vcf) {
+  names <- colnames(vcf@gt[,-1])
+  names <- as.data.frame(names) %>% 
+    tidyr::separate(names, into = c("INDV", "sorted", "dedup", "filetype"), sep = "_") %>% 
+    dplyr::select(-sorted, -dedup, -filetype)
+  return(names)
+}
 #' Calculate pure allele dictionary (i.e., fixed differences between reference samples)
 #' Code adapted from Chambers et al. 2023, DOI: https://doi.org/10.1093/sysbio/syac056
 #' https://github.com/eachambers/ksmo_lampro/blob/main/R/data_analysis/Fixed_diff_analysis.R

@@ -1,7 +1,7 @@
 #' Read in trees
 #'
 #' @param data_path path to all data files
-#' @param prefix prefix for species, mito, and ILS trees (must have suffixes "_speciestree.txt", "_mitotree.txt", and "_ILStree.txt")
+#' @param prefix prefix for species, mito, and minor trees (must have suffixes "_speciestree.txt", "_mitotree.txt", and "_minortree.txt")
 #' @param nmt_gt_file file name for nmt gene trees (rooted)
 #' @param cont_gt_file file name for glycolysis gene trees (rooted)
 #'
@@ -13,9 +13,9 @@ read_files <- function(data_path, nmt_gt_file, cont_gt_file = NULL, prefix, mito
   
   spptree <- ape::read.tree(paste0(data_path, prefix, "_speciestree.txt"))
   mitotree <- ape::read.tree(paste0(data_path, prefix, "_mitotree.txt"))
-  ilstree <- ape::read.tree(paste0(data_path, prefix, "_ILStree.txt"))
+  minortree <- ape::read.tree(paste0(data_path, prefix, "_minortree.txt"))
   
-  return(list(nmt_gt = nmt_gt, cont_gt = cont_gt, spptree = spptree, mitotree = mitotree, ilstree = ilstree))
+  return(list(nmt_gt = nmt_gt, cont_gt = cont_gt, spptree = spptree, mitotree = mitotree, minortree = minortree))
 }
 
 #' Calculate RF distances; assumes trees are rooted

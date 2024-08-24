@@ -16,6 +16,7 @@ theme_set(theme_cowplot())
 ##              (2) Build mean p-values for genes (Fig. 3A)
 ##              (3) Read in non-significant GWAS SNPs
 ##              (4) Build Manhattan plot (Fig. S2)
+##              (5) Build Q-Q plot (Fig. XX)
 
 
 # (1) Read in NMT and control gene data -----------------------------------
@@ -67,8 +68,7 @@ chrom_means <- sig_snps %>%
   mutate(dataset = "other")
 
 
-# Plot results ------------------------------------------------------------
-
+# Plot results
 dat <- bind_rows(cont_sig, nmt_sig, chrom_means)
 
 # Which chroms have highest (>2) -logpvals? Save result to file
@@ -114,7 +114,7 @@ dat %>%
   xlab("Scaffold") # export 10x5
 
 
-# (3) Read in data for Manhattan plot -------------------------------------
+# (3) Read in data for Manhat and qq plots --------------------------------
 
 # If continuing from GWAS_analysis.R script, no need to import the following files
 gwas <- read_tsv(here("data", "GWAS_results.txt"), col_names = TRUE)
@@ -197,3 +197,15 @@ p +
   scale_color_manual(values = c("NMT" = "brown", "control" = "skyblue4")) +
   theme(axis.text.x = element_blank(),
         axis.ticks.x = element_blank())
+
+
+# (5) Build qqplot --------------------------------------------------------
+
+# Subset data to retrieve p-values for all SNPs within N-mt genes and control genes
+gwas_cont <- left_join(cont_gathered, gwas) %>% 
+  na.omit() # 157,943 SNPs with GWAS results
+gwas_nmts <- left_join(nmt_gathered, gwas) %>% 
+  na.omit() # 37,214 SNPs with GWAS results
+
+# Build Q-Q plot
+qqplot(gwas_nmts$signed.logp, gwas_cont$signed.logp)

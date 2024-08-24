@@ -19,6 +19,7 @@ theme_set(theme_cowplot())
 ##              (2) Tidy data
 ##              (3) Build summary bar plots for Nmts and control genes (Fig. 3C)
 ##              (4) Bar plots for specific chromosomes (Fig. 3D)
+##              (5) Density plots of DAPC results
 
 
 # (1) Load input data -----------------------------------------------------
@@ -189,4 +190,69 @@ xlab <- textGrob("Position (SNP)",
 
 # Add common labels to plot
 grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 7x4.5
+
+
+# (5) DAPC results --------------------------------------------------------
+
+# Below relies on objects generated using the Diagnosticdiff_analysis.R script.
+
+### Nmt genes
+p_nmt <-
+  ggplot() +
+  geom_density(data = pred_dat %>% 
+                 filter(mitotype == "slowinskii"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7") +
+  geom_density(data = pred_dat %>% 
+                 filter(mitotype == "emoryi"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d") +
+  geom_density(data = pred_slow,
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7",
+               alpha = 0.25) +
+  geom_density(data = pred_emoryi,
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d",
+               alpha = 0.25) +
+  ggtitle("N-mt genes")
+
+### Control genes
+p_cont <-
+  ggplot() +
+  geom_density(data = pred_dat_cont %>% 
+                 filter(mitotype == "slowinskii"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7") +
+  geom_density(data = pred_dat_cont %>% 
+                 filter(mitotype == "emoryi"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d") +
+  geom_density(data = pred_slow_cont,
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7",
+               alpha = 0.25) +
+  geom_density(data = pred_emoryi_cont,
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d",
+               alpha = 0.25) +
+  ggtitle("Control genes")
+
+plot_grid(p_nmt, p_cont, nrow = 1)
 
