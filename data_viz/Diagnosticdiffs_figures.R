@@ -5,7 +5,7 @@ library(grid)
 library(gridExtra)
 theme_set(theme_cowplot())
 
-## The following code creates Figs. 3C and 3D.
+## The following code creates Figs. 3C, 3D, and SX.
 
 ##    FILES REQUIRED:
 ##          RData objects with allele freqs for:
@@ -19,7 +19,7 @@ theme_set(theme_cowplot())
 ##              (2) Tidy data
 ##              (3) Build summary bar plots for Nmts and control genes (Fig. 3C)
 ##              (4) Bar plots for specific chromosomes (Fig. 3D)
-##              (5) Density plots of DAPC results
+##              (5) Density plots of DAPC results (Fig. SX)
 
 
 # (1) Load input data -----------------------------------------------------
@@ -192,7 +192,7 @@ xlab <- textGrob("Position (SNP)",
 grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 7x4.5
 
 
-# (5) DAPC results --------------------------------------------------------
+# (5) Fig. SX: DAPC results -----------------------------------------------
 
 # Below relies on objects generated using the Diagnosticdiff_analysis.R script.
 
@@ -254,5 +254,4 @@ p_cont <-
                alpha = 0.25) +
   ggtitle("Control genes")
 
-plot_grid(p_nmt, p_cont, nrow = 1)
-
+plot_grid(p_nmt, p_cont, nrow = 1) # export 10x4

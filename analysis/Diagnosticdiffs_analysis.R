@@ -3,6 +3,7 @@ library(seqinr)
 library(vcfR)
 library(here)
 library(adegenet)
+library(algatr)
 
 ## The following code calculates the admixture index (fixed differences) between individuals
 ## at the emoryi-slowinskii contact zone based on their mitochondrial haplotype.
@@ -20,7 +21,7 @@ library(adegenet)
 ##              (2) Calculate diagnostic diffs between reference groups
 ##              (3) Calculate per locus allele frequencies
 ##              (4) Individual-based statistical test
-##              (5) DAPC
+##              (5) Run a DAPC on un-admixed vs admixed individuals
 
 # Load relevant functions
 source(here("analysis", "Diagnosticdiffs.R"))
@@ -152,7 +153,6 @@ save(freqs_to_plot_nmts, file = paste0(here("data"), "/freq_data_nmts_ldp_", thr
 
 
 # (5) Prepare data for DAPC -----------------------------------------------
-# The following is adapted from Misha Matz, from here: https://www.nature.com/articles/s41559-016-0014
 
 ### Separate datasets into least admixed and admixed individuals
 # Import pop structure results from Marshall et al. (2021)
@@ -169,11 +169,11 @@ admix_slow <-
 pure_emoryi <-
   qmat %>% 
   filter(mtclade == "EMNO") %>% 
-  slice_max(slowinskii, n = 4)
+  slice_max(emoryi, n = 4)
 admix_emoryi <-
   qmat %>% 
   filter(mtclade == "EMNO") %>% 
-  slice_min(slowinskii, n = 13)
+  slice_min(emoryi, n = 13)
 
 # Un-admixed samples
 unadmixed <- bind_rows(pure_slow, pure_emoryi)
@@ -206,21 +206,22 @@ nmts_admix_slow <-
   filter(INDV %in% admix_slow$sampleID) %>% 
   column_to_rownames(var = "INDV") %>% 
   as.matrix()
-# dplyr::select(where(~n_distinct(.) > 1)) # remove monomorphic loci
+
 nmts_admix_emoryi <-
   as.data.frame(nmts_dos_nonas) %>% 
   rownames_to_column(var = "INDV") %>% 
   filter(INDV %in% admix_emoryi$sampleID) %>% 
   column_to_rownames(var = "INDV") %>% 
   as.matrix()
-# dplyr::select(where(~n_distinct(.) > 1)) # remove monomorphic loci
 
 # Get pop assignment for pure/unadmixed individuals
+# We're using the mitotypes object because the ordering is consistent
+# with the vcf and dosage matrix
 unadmixed_mitotypes <-
   mitotypes %>% 
   filter(INDV %in% unadmixed$sampleID)
 # Check ordering
-rownames(nmts_pure) == unadmixed_mitotypes$INDV
+all(rownames(nmts_pure) == unadmixed_mitotypes$INDV)
 
 ### Control genes
 # Import vcfs for N-mt and control gene SNPs that have been LD-pruned
@@ -248,17 +249,16 @@ cont_admix_slow <-
   filter(INDV %in% admix_slow$sampleID) %>% 
   column_to_rownames(var = "INDV") %>% 
   as.matrix()
-# dplyr::select(where(~n_distinct(.) > 1)) # remove monomorphic loci
+
 cont_admix_emoryi <-
   as.data.frame(cont_dos_nonas) %>% 
   rownames_to_column(var = "INDV") %>% 
   filter(INDV %in% admix_emoryi$sampleID) %>% 
   column_to_rownames(var = "INDV") %>% 
   as.matrix()
-# dplyr::select(where(~n_distinct(.) > 1)) # remove monomorphic loci
 
 # Check ordering of mitotypes
-rownames(cont_pure) == unadmixed_mitotypes$INDV
+all(rownames(cont_pure) == unadmixed_mitotypes$INDV)
 
 
 # (6) Run DAPC ------------------------------------------------------------
@@ -305,5 +305,35 @@ pred_emoryi_cont <- predict.dapc(dp_cont,
                             newdata = cont_admix_emoryi)
 pred_emoryi_cont = as.data.frame(pred_emoryi_cont$ind.scores)
 
-### Run MWU test
 
+# (7) Run MWU test --------------------------------------------------------
+
+# First, combine DAPC results from above
+pred_slow <- left_join(pred_slow %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_slow <- pred_slow %>% 
+  mutate(category = "admix_slow",
+         dataset = "nmt")
+
+pred_emoryi <- left_join(pred_emoryi %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_emoryi <- pred_emoryi %>% 
+  mutate(category = "admix_emoryi",
+         dataset = "nmt")
+
+dapc_nmts <- bind_rows(pred_slow, pred_emoryi)
+
+pred_slow_cont <- left_join(pred_slow_cont %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_slow_cont <- pred_slow_cont %>% 
+  mutate(category = "admix_slow",
+         dataset = "cont")
+
+pred_emoryi_cont <- left_join(pred_emoryi_cont %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_emoryi_cont <- pred_emoryi_cont %>% 
+  mutate(category = "admix_emoryi",
+         dataset = "cont")
+dapc_cont <- bind_rows(pred_slow_cont, pred_emoryi_cont)
+
+### Run MWU test
+dapc_admixed <- bind_rows(dapc_nmts, dapc_cont)
+
+results <- wilcox.test(LD1 ~ dataset, dapc_admixed, exact = TRUE, paired = FALSE)
+results

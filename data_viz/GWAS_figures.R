@@ -208,4 +208,18 @@ gwas_nmts <- left_join(nmt_gathered, gwas) %>%
   na.omit() # 37,214 SNPs with GWAS results
 
 # Build Q-Q plot
-qqplot(gwas_nmts$signed.logp, gwas_cont$signed.logp)
+qqplot(gwas_cont$signed.logp, gwas_nmts$signed.logp)
+abline(0,1, col = "red") # export 8x6
+
+## Let's take gene-wide average p-values and re-build the qqplot
+gwas_cont_avg <-
+  gwas_cont %>% 
+  group_by(gene_group) %>% 
+  summarize(mean_signedpval = mean(signed.logp))
+gwas_nmts_avg <-
+  gwas_nmts %>% 
+  group_by(gene_group) %>% 
+  summarize(mean_signedpval = mean(signed.logp))
+
+qqplot(gwas_cont_avg$mean_signedpval, gwas_nmts_avg$mean_signedpval)
+abline(0,1, col = "red") # save 8x6
