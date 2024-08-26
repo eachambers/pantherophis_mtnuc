@@ -16,7 +16,7 @@ theme_set(theme_cowplot())
 ##              (2) Build mean p-values for genes (Fig. 3A)
 ##              (3) Read in non-significant GWAS SNPs
 ##              (4) Build Manhattan plot (Fig. S2)
-##              (5) Build Q-Q plot (Fig. XX)
+##              (5) Build Q-Q plot (Fig. S5)
 
 
 # (1) Read in NMT and control gene data -----------------------------------

@@ -19,7 +19,7 @@ theme_set(theme_cowplot())
 ##              (2) Tidy data
 ##              (3) Build summary bar plots for Nmts and control genes (Fig. 3C)
 ##              (4) Bar plots for specific chromosomes (Fig. 3D)
-##              (5) Density plots of DAPC results (Fig. SX)
+##              (5) Density plots of DAPC results (Fig. S6)
 
 
 # (1) Load input data -----------------------------------------------------
@@ -192,7 +192,7 @@ xlab <- textGrob("Position (SNP)",
 grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 7x4.5
 
 
-# (5) Fig. SX: DAPC results -----------------------------------------------
+# (5) Fig. S6: DAPC results -----------------------------------------------
 
 # Below relies on objects generated using the Diagnosticdiff_analysis.R script.
 

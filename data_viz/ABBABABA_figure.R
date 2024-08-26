@@ -12,7 +12,7 @@ theme_set(theme_cowplot())
 ##    STRUCTURE OF CODE:
 ##              (1) Import data
 ##              (2) Build Fig. 2B
-##              (3) Build Fig. S2
+##              (3) Build Fig. S3
 
 
 # (1) Import data ---------------------------------------------------------
@@ -34,7 +34,7 @@ joined %>%
   ylab("Mean fdM") # export 5x5
 
 
-# (3) Build Fig S2 --------------------------------------------------------
+# (3) Build Fig S3 --------------------------------------------------------
 
 dat <- data.frame(topology = c("BBAA", "ABBA", "BABA"),
                   score = c(1.59484e+06, 1.06098e+06, 519655))
