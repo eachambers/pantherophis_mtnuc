@@ -4,7 +4,7 @@ library(cowplot)
 library(scales)
 theme_set(theme_cowplot())
 
-## The following code creates Figures 2B and S2 using the results from the ABBA-BABA analysis.
+## The following code creates Figures 2B and S3 using the results from the ABBA-BABA analysis.
 
 ##    FILES REQUIRED:
 ##          Joined_cont.txt and Joined_nmts.txt, produced using `ABBABABA.R`

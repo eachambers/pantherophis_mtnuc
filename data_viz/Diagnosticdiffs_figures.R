@@ -5,7 +5,7 @@ library(grid)
 library(gridExtra)
 theme_set(theme_cowplot())
 
-## The following code creates Figs. 3C, 3D, and SX.
+## The following code creates Figs. 3C, 3D, and S6.
 
 ##    FILES REQUIRED:
 ##          RData objects with allele freqs for:

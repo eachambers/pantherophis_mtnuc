@@ -3,8 +3,9 @@ library(tidyverse)
 library(cowplot)
 theme_set(theme_cowplot())
 
-## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S3), 
-## and calculates mean p-values per gene per chromosome for outliers.
+## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S4), 
+## calculates mean p-values per gene per chromosome for outliers, and generates 
+## quantile-quantile plots (Fig. S5).
 
 ##    FILES REQUIRED:
 ##          Significant SNPs for NMT and control genes ("GWAS_control_sigsnps_*.txt" & "GWAS_NMT_sigsnps_*.txt"), generated using `GWAS_analysis.R`
