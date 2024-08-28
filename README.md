@@ -1,6 +1,6 @@
 # Introgression and coevolution in the *Pantherophis guttatus* complex
 
-The following is code to run analyses and generate figures from [Marshall et al. (XXX)](REFER). Raw data files are provided on Dryad [here](https://datadryad.org/XXX). The structure of this repository is that scripts are divided into those that perform analyses ([here](https://github.com/eachambers/pantherophis_mtnuc/tree/main/analysis)) and data visualizations ([here](https://github.com/eachambers/pantherophis_mtnuc/tree/main/data_viz)).
+The following is code to run analyses and generate figures from [Marshall et al. (XXX)](REFER). Raw data files are provided on Dryad [here](https://datadryad.org/XXX). The structure of this repository is that scripts are divided into those that [perform analyses](https://github.com/eachambers/pantherophis_mtnuc/tree/main/analysis) and those that create [data visualizations](https://github.com/eachambers/pantherophis_mtnuc/tree/main/data_viz).
 
 ## Scripts in repository
 
