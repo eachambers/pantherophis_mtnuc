@@ -3,6 +3,7 @@ library(tidyverse)
 library(fuzzyjoin)
 library(padr)
 library(GWASTools) # BiocManager::install("GWASTools")
+library(scattermore) # efficient plotting of points for Manhattan plot
 
 ## The following code processes results from the GWAS analysis and merges these with the NMT and
 ## control genes.

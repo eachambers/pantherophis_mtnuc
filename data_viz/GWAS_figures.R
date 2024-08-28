@@ -31,7 +31,7 @@ contdat <- contdat %>%
   dplyr::rename(cont_cat = category)
 nmtdat <- nmtdat %>% 
   dplyr::rename(nmt_cat = category)
-sig_snps <- full_join(contdat, nmtdat) # 954,013 if alpha=0.05
+sig_snps <- full_join(contdat, nmtdat) # 954,013 if alpha=0.05; 144,823 if alpha=0.01
 
 
 # (2) Build figure with mean significance values per gene -----------------
@@ -67,7 +67,6 @@ chrom_means <- sig_snps %>%
   # Only consider chroms that contain either Nmt or control genes (or both)
   dplyr::filter(chrom %in% cont_sig$chrom | chrom %in% nmt_sig$chrom) %>%
   mutate(dataset = "other")
-
 
 # Plot results
 dat <- bind_rows(cont_sig, nmt_sig, chrom_means)
@@ -119,10 +118,20 @@ dat %>%
 
 # If continuing from GWAS_analysis.R script, no need to import the following files
 gwas <- read_tsv(here("data", "GWAS_results.txt"), col_names = TRUE)
+
+# We're only going to build a Manhattan plot for the top ten scaffolds that contain
+# either N-mt or control genes
+mostsig <- read_tsv(here("data", "top_sig_chroms.txt"), col_names = TRUE)
+mostsigchroms <- unique(mostsig$chrom)
+
+# Extract most sig scaffolds from GWAS results
+subset <-
+  gwas %>% 
+  dplyr::filter(chrom %in% mostsigchroms) # 1,846,955 obs
+
+alpha = "0.01"
 contdat <- read_tsv(paste0(here("data"), "/GWAS_control_sigsnps_", alpha, ".txt"), col_names = TRUE)
 nmtdat <- read_tsv(paste0(here("data"), "/GWAS_NMT_sigsnps_", alpha, ".txt"), col_names = TRUE)
-
-alpha = 0.01
 
 # Combine cont and nmts together so they aren't double-plotted
 contdat <- contdat %>% 
@@ -130,74 +139,75 @@ contdat <- contdat %>%
 nmtdat <- nmtdat %>% 
   dplyr::rename(nmt_cat = category)
 sig_snps <- full_join(contdat, nmtdat) %>% # 954,013 if alpha=0.05; 144,823 if alpha=0.01
-  dplyr::mutate(category = case_when(nmt_cat == "NMT" ~ "NMT",
-                                     cont_cat == "cont" ~ "control",
-                                     nmt_cat == "non-NMT" & cont_cat == "non-control" ~ "other")) %>% 
+  dplyr::mutate(Category = case_when(nmt_cat == "NMT" ~ "N-mt",
+                                     cont_cat == "cont" ~ "Control",
+                                     nmt_cat == "non-NMT" & cont_cat == "non-control" ~ "Outlier")) %>% 
   dplyr::select(-c(nmt_cat, cont_cat))
-
-# Let's only look at most significantly associated mean genes (from above analysis)
-mostsig <- read_tsv(here("data", "top_sig_chroms.txt"), col_names = TRUE)
-mostsigchroms <- unique(mostsig$chrom)
-
-# Extract above scaffolds from GWAS results
-subset <-
-  gwas %>% 
-  dplyr::filter(chrom %in% mostsigchroms) # 1,846,955 obs
 
 # Assign categories to the subset data according to outliers and categories
 # We want SNPs to be categorized only if they're below set p-value and
 # we want to categorize them based on whether they belong in N-mt genes, 
 # control genes, or elsewhere
+alpha = 0.01 # needs to be numeric now
 nonsigsubset <-
   subset %>% 
-  dplyr::filter(signed.logp < -log10(alpha)) # 1,827,678 obs
+  dplyr::filter(signed.logp < -log10(alpha)) %>% 
+  dplyr::select(chrom, pos, signed.logp) %>% 
+  mutate(Category = "Non-outlier") # 1,827,678 obs
 
 sigsubset <-
   sig_snps %>% 
-  dplyr::filter(chrom %in% mostsigchroms) # 19,277 obs
+  dplyr::filter(chrom %in% mostsigchroms) %>% 
+  dplyr::select(chrom, pos, signed.logp, Category) # 19,277 obs
+
+# We need to ensure ordering is correct so we're going to combine
+# datasets together for ease
+plot_dat <- bind_rows(nonsigsubset, sigsubset)
+plot_dat <-
+  plot_dat %>% 
+  arrange(chrom, pos) %>% 
+  mutate(full_pos = 1:nrow(plot_dat))
 
 
 # (4) Build Manhattan plot ------------------------------------------------
 
-axis_set <- nonsigsubset %>% 
+# Get center for each scaffold for adding breaks to x axis
+axis_set <- plot_dat %>% 
   group_by(chrom) %>% 
-  summarize(center = mean(pos))
+  summarize(center = mean(full_pos))
 
 # Set levels
-sigsubset$chrom <- factor(sigsubset$chrom, levels = (unique(sigsubset$chrom)))
+plot_dat$chrom <- factor(plot_dat$chrom, levels = (unique(plot_dat$chrom)))
 
-p_sig <-
-  ggplot() +
-  geom_point(data = sigsubset %>% filter(category == "other"), aes(x = pos, y = signed.logp), col = "thistle", size = 1.4, alpha = 0.75) +
+# Sloppy way of doing this but it works
+odd_chroms <- c("NW_023010710.1", "NW_023010746.1", "NW_023010870.1", "NW_023012548.1", "NW_023036219.1")
+even_chroms <- c("NW_023010730.1", "NW_023010793.1", "NW_023010881.1", "NW_023031296.1", "NW_023041095.1")
+
+# Build Manhattan plot
+ggplot() +
+  geom_scattermore(data = plot_dat %>% 
+                     filter(Category == "Outlier"), 
+                   aes(x = full_pos, y = signed.logp), 
+                   col = "goldenrod1", size = 1.4, alpha = 0.75) +
   xlab(NULL) +
   ylab("-log(p-value)") +
-  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
-  scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, (max(sigsubset$signed.logp) + 0.25))) +
-  geom_point(data = sigsubset %>% filter(category != "other"), aes(x = pos, y = signed.logp, col = category), size = 1.4, alpha = 0.75) +
-  scale_color_manual(values = c("NMT" = "brown", "control" = "skyblue4")) +
-  geom_point(data = nonsigsubset, aes(x = pos, y = signed.logp, col = chrom), size = 1.4, alpha = 0.75) +
-  scale_color_manual(values = rep(c("grey54","lightgrey"), ceiling(length(unique(sigsubset$chrom))/2))[1:length(unique(sigsubset$chrom))]) +
-  theme(axis.text.x = element_text(angle = 60, size = 4, vjust = 0.5))
-
-p <-
-  ggplot() +
-  geom_point(data = nonsigsubset, aes(x = pos, y = signed.logp), col = "grey", size = 1.4, alpha = 0.75) +
-  ylab("-log(p-value)") +
-  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) +
-  scale_y_continuous(expand = c(0, 0), limits = c(0, (max(sigsubset$signed.logp) + 0.25))) +
-  # scale_color_manual(values = rep(c("grey54","lightgrey"), ceiling(length(unique(nonsigsubset$chrom))/2))[1:length(unique(nonsigsubset$chrom))]) +
-  # xlab(NULL) +
-  # scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center) +
-  # theme(axis.text.x = element_text(angle = 60, size = 4, vjust = 0.5)) +
-  facet_grid(~chrom, scales = "free_x")
-
-p +
-  geom_point(data = sigsubset %>% filter(category == "other"), aes(x = pos, y = signed.logp), col = "tan1", size = 1.4, alpha = 0.75) +
-  geom_point(data = sigsubset %>% filter(category != "other"), aes(x = pos, y = signed.logp, col = category), size = 1.4, alpha = 0.75) +
-  scale_color_manual(values = c("NMT" = "brown", "control" = "skyblue4")) +
-  theme(axis.text.x = element_blank(),
-        axis.ticks.x = element_blank())
+  scale_x_continuous(label = axis_set$chrom, breaks = axis_set$center, expand = c(0, 0), guide = guide_axis(n.dodge = 2)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, (max(plot_dat$signed.logp) + 0.25))) +
+  geom_point(data = plot_dat %>% 
+               filter(Category == "N-mt" | Category == "Control"), 
+             aes(x = full_pos, y = signed.logp, col = Category), size = 1.4, alpha = 0.75) +
+  scale_color_manual(values = c("N-mt" = "brown", "Control" = "skyblue4")) +
+  geom_scattermore(data = plot_dat %>% 
+                     filter(Category == "Non-outlier") %>% 
+                     filter(chrom %in% odd_chroms),
+                   aes(x = full_pos, y = signed.logp), col = "lightgrey", size = 1.4, alpha = 0.75) +
+  geom_scattermore(data = plot_dat %>% 
+                     filter(Category == "Non-outlier") %>% 
+                     filter(chrom %in% even_chroms),
+                   aes(x = full_pos, y = signed.logp), col = "grey54", size = 1.4, alpha = 0.75) +
+  # scale_color_manual(values = rep(c("grey54","lightgrey"), ceiling(length(unique(nonsigsubset$chrom))/2)[1:length(unique(nonsigsubset$chrom))]) +
+  theme(axis.text.x = element_text(angle = 60, size = 6, vjust = 0.5)) +
+  geom_hline(yintercept = -log10(alpha), linetype = "dashed", color = "black", linewidth = 0.6) # export 10x6
 
 
 # (5) Build qqplot --------------------------------------------------------
