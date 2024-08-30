@@ -6,7 +6,7 @@ The following is code to run analyses and generate figures from [Marshall et al.
 
 - **Bioinformatics pipeline:**
   - Trimming, mapping, and calling variants with freebayes and ANGSD
-  - Extracting random, 5-kb blocks for species tree analysis
+  - Extracting random 5-kb blocks for species tree analysis
   - Extracting N-mt and control gene datasets
   
 - **Performing phylogenomic, mitochondrial and gene tree analyses:**
