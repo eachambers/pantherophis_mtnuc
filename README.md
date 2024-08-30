@@ -4,6 +4,16 @@ The following is code to run analyses and generate figures from [Marshall et al.
 
 ## Scripts in repository
 
+- **Bioinformatics pipeline:**
+  - Trimming, mapping, and calling variants with freebayes and ANGSD
+  - Extracting random, 5-kb blocks for species tree analysis
+  - Extracting N-mt and control gene datasets
+  
+- **Performing phylogenomic, mitochondrial and gene tree analyses:**
+  - Estimating species tree with Starbeast3
+  - Estimating mitochondrial tree
+  - Estimating N-mt and control gene trees
+
 - **Examining topologies of gene trees:**
     - Calculating Robinson-Foulds distances among gene trees ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists_analysis.R))
     - Visualizing results ([Fig. 2C](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/RFdists_figure.R))
@@ -19,7 +29,7 @@ The following is code to run analyses and generate figures from [Marshall et al.
     - Visualizing DAPC results ([Fig. S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
  
 - **ABBA-BABA analysis:**
-    - Running ABBA-BABA analyses with Dtrios ([analysis script
+    - Running ABBA-BABA analyses with Dtrios and Fstat analysis with Dinvestigate
     - Calculating mean fdM in sliding windows from ABBA-BABA results [analysis script]
     - (https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
     - Visualizing results ([Figs. 2B & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
