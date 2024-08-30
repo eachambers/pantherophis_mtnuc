@@ -2,10 +2,10 @@ library(tidyverse)
 library(here)
 library(fuzzyjoin)
 
-## The following code generates summary statistics from the ABBA-BABA analysis.
+## The following code generates summary statistics from the Dinvestigate (fstat) analysis.
 
 ##    FILES REQUIRED:
-##          Results from ABBA-BABA analysis (emoryi_slowinskii_guttatus_localFstats__50_25.txt)
+##          Results from Dinvestigate analysis (emoryi_slowinskii_guttatus_localFstats__50_25.txt)
 ##          Genomic locations for NMT and control genes (Nmt_coords.txt and controls_coords.txt)
 
 ##    STRUCTURE OF CODE:
@@ -16,7 +16,7 @@ library(fuzzyjoin)
 
 # (1) Import data ---------------------------------------------------------
 
-# ABBA-BABA data
+# fstat data
 dat <- read_tsv(here("data", "emoryi_slowinskii_guttatus_localFstats__50_25.txt"), col_names = TRUE) # 120,023
 
 # Import Nmt information
