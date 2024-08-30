@@ -20,5 +20,6 @@ The following is code to run analyses and generate figures from [Marshall et al.
  
 - **ABBA-BABA analysis:**
     - Running ABBA-BABA analyses with Dtrios ([analysis script
-    - Calculating mean fdM in sliding windows from ABBA-BABA results [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
+    - Calculating mean fdM in sliding windows from ABBA-BABA results [analysis script]
+    - (https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
     - Visualizing results ([Figs. 2B & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
