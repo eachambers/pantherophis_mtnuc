@@ -19,5 +19,6 @@ The following is code to run analyses and generate figures from [Marshall et al.
     - Visualizing DAPC results ([Fig. S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
  
 - **ABBA-BABA analysis:**
+    - Running ABBA-BABA analyses with Dtrios
     - Calculating mean fdM in sliding windows from ABBA-BABA results ([analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
     - Visualizing results ([Figs. 2B & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
