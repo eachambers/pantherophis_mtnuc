@@ -16,7 +16,7 @@ TJH3395	xxx
 emoryi	slowinskii	guttatus
 
 ## run ABBA-BABA analysis on genome-wide SNPs
-Dsuite Dtrios HCSamples_PanObs_fb_snps_filtered.recode.vcf.gz sets.txt
+Dsuite Dtrios HCSamples_PanObs_fb_snps_filtered.recode.vcf.gz sets.txt treefile.nwk
 
 ## calculate fbranch statistic 
 Dsuite Fbranch treefile.nwk sets_tree.txt > fbranch_matrix.txt
