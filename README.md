@@ -5,9 +5,12 @@ The following is code to run analyses and generate figures from [Marshall et al.
 ## Scripts in repository
 
 - **Bioinformatics pipeline:**
-  - Trimming, mapping, and calling variants with freebayes and ANGSD
-  - Extracting random 5-kb blocks for species tree analysis
-  - Extracting N-mt and control gene datasets
+  - Trimming, mapping, and calling variants for high coverage samples with freebayes
+  - Extracting random 5-kb blocks for species tree analysis; extracting N-mt and control gene datasets
+  - Extracting mitogenomes with Mitofinder
+  - running ABBA-BABA analysis and calculating fstats with Dsuite package
+  - Estimating maximum likelihood trees for mitogenomes, N-mt genes, and control genes
+  - Call variants for contact zone (i.e., lower coverage) samples using ANGSD
   
 - **Performing phylogenomic, mitochondrial and gene tree analyses:**
   - Estimating species tree with Starbeast3
