@@ -1,4 +1,5 @@
 ##download P. obsoletus fastq files from SRA and map to P. guttatus reference genome
+## All analyses were run on the Lonestar 6 (LS6) high performance computing system at the Texas Advanced Computing Center (TACC), UT Austin
 
 #install SRA toolkit 
 wget --output-document sratoolkit.tar.gz https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/current/sratoolkit.current-ubuntu64.tar.gz
