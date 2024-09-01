@@ -9,6 +9,7 @@ The following is code to run analyses and generate figures from [Marshall et al.
   - Extracting random 5-kb blocks for species tree analysis; extracting N-mt and control gene datasets
   - Extracting mitogenomes with Mitofinder
   - Call variants for contact zone (i.e., lower coverage) samples using ANGSD
+  - Extract outgroup sequences from SRA
   
 - **Performing phylogenomic, mitochondrial and gene tree analyses:**
   - Estimating species tree with Starbeast3
