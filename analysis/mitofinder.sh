@@ -1,4 +1,5 @@
 ###Extract mitogenomes from each fastq file using Mitofinder
+### All analyses were run on the Lonestar 6 (LS6) high performance computing system at the Texas Advanced Computing Center (TACC), UT Austin; job scripts were submitted to the LS6 queue using slurm
 
 #download MitoFinder using singularity 
 singularity pull --arch amd64 library://remiallio/default/mitofinder:v1.4.1 
