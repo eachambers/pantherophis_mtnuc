@@ -1,4 +1,5 @@
 ### Extracting phylogenomic blocks, or alignments (scripts modified from Else K. Mikkelsen's github page, https://github.com/elsemikk/Stercorariidae_Phylogenomics)
+### All analyses were run on the Lonestar 6 (LS6) high performance computing system at the Texas Advanced Computing Center (TACC), UT Austin; job scripts were submitted to the LS6 queue using slurm
 
 # create dataset with variant AND invariant sites from which to extract alignments. Run in directory with merged bam file (including high coverage samples plus outgroup) and indexed reference genome. Run job script using slurm. 
 echo "freebayes-parallel <(fasta_generate_regions.py PanGut_3.0_genomic.fna.fai 100000) 256 \ -f PanGut_3.0_genomic.fna --gvcf --report-monomorphic -g 500 HCSamples_PanObs.bam > HCSamples_allsites.vcf" >> freebayes
