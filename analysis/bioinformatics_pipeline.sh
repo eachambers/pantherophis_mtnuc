@@ -1,5 +1,5 @@
 ### Bioinformatics pipeline starting with fastq files of raw sequence reads to dataset of called variants for high coverage samples
-### All for loops in this file were used to produce a job script that was submitted to the Texas Advanced Computing Center (TACC) with slurm
+### All analyses were run on the Lonestar 6 (LS6) high performance computing system at the Texas Advanced Computing Center (TACC), UT Austin; job scripts were submitted to the LS6 queue using slurm
 ### Programs were conda installed and run in environments created for each program
 
 ## Trim raw reads with trim-galore! Run this job in the same directory with fastq files
@@ -8,8 +8,7 @@ echo "trim_galore -j 8 -q 20 --phred33 --paired ${i/_R2_001.fastq.gz/}_R1_001.fa
 done
 
 
-## Map reads to reference genome with bowtie2. Run this job in same directory as trimmed files and indexed reference genome. Process mapped alignments (sam files) into s
-
+## Map reads to reference genome with bowtie2. Run this job in same directory as trimmed files and indexed reference genome.
 #Create index files for reference genome
 bowtie2-build PanGut_3.0_genomic.fna PanGut_3.0_genomic.fna
 
@@ -18,7 +17,7 @@ for i in *_R1_001_val_1.fq.gz; do
 echo "bowtie2 --no-unal --local -p 8 -x PanGut_3.0_genomic.fna -1 $i -2 ${i/_R1_001_val_1.fq.gz/}_R2_001_val_2.fq.gz -S ${i/_R1_001_val_1.fq.gz/}.sam" >> bowtie2; 
 done
 
-## Process mapped alignments (sam files) into sorted, duplicate-removed, binary (bam) files with read groups added
+## Process mapped alignments (sam files) into sorted, indexed binary (bam) files with duplicates removed and read groups added
 
 #Convert sams to bams
 for i in *.sam; do 
