@@ -5,11 +5,10 @@ The following is code to run analyses and generate figures from [Marshall et al.
 ## Scripts in repository
 
 - **Bioinformatics pipeline:**
-  - Trimming, mapping, and calling variants for high coverage samples with freebayes
+  - Trimming, mapping, calling variants for high coverage samples with freebayes, and calling variants for lower coverage samples with ANGSD
   - Extracting random 5-kb blocks for species tree analysis; extracting N-mt and control gene datasets
   - Extracting mitogenomes with Mitofinder
-  - Call variants for contact zone (i.e., lower coverage) samples using ANGSD
-  - Download outgroup sequences from SRA
+  - Downloading outgroup sequences from SRA
   
 - **Performing phylogenomic, mitochondrial and gene tree analyses:**
   - Estimating species tree with Starbeast3
