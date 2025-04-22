@@ -6,7 +6,7 @@ library(fuzzyjoin)
 
 ##    FILES REQUIRED:
 ##          Results from Dinvestigate analysis (emoryi_slowinskii_guttatus_localFstats__50_25.txt)
-##          Genomic locations for NMT and control genes (Nmt_coords.txt and controls_coords.txt)
+##          Genomic locations for NMT and control genes (Nmt_coords.txt and control_coords2.txt)
 
 ##    STRUCTURE OF CODE:
 ##              (1) Import data
@@ -27,13 +27,21 @@ nmts <- read_tsv(here("data", "Nmt_coords.txt"), col_names = FALSE) %>%
 nmts$start <- as.numeric(nmts$start)
 nmts$end <- as.numeric(nmts$end) # 167 genes
 
-# Import control gene information
-cont <- read_tsv(here("data", "controls_coords.txt"), col_names = FALSE) %>% 
+# Retrieve gene names from old control coordinates file
+old_cont <- read_tsv(here("data", "controls_coords.txt"), col_names = FALSE) %>% 
   separate(col = X1, sep = ":", into = c("chr", "sites")) %>% 
   separate(col = sites, sep = "-", into = c("start", "end")) %>% 
   rename(gene = X2)
+old_cont$start <- as.numeric(old_cont$start)
+old_cont$end <- as.numeric(old_cont$end)
+
+# Import control gene information
+cont <- read_tsv(here("data", "control_coords2.txt"), col_names = FALSE) %>% 
+  rename("chr" = X1, "start" = X2, "end" = X3)
 cont$start <- as.numeric(cont$start)
-cont$end <- as.numeric(cont$end) # 142 genes
+cont$end <- as.numeric(cont$end) # 139 genes
+
+cont <- left_join(cont, old_cont)
 
 
 # (2) Get summary statistics ----------------------------------------------
@@ -41,14 +49,14 @@ cont$end <- as.numeric(cont$end) # 142 genes
 # Get total numbers of SNPs for cont and nmt datasets
 cont %>% 
   mutate(length = end-start) %>% 
-  summarize(sum(length)) # 10049438
+  summarize(sum(length)) # 9819152
 
 nmts %>% 
   mutate(length = end-start) %>% 
   summarize(sum(length)) # 2348450
 
 # Now, let's get a genome-wide mean estimate for fdM for nmts and cont genes
-nmtchr <- unique(nmts$chr) # 74 unique chroms
+nmtchr <- unique(nmts$chr) # 87 unique chroms
 nmtdat <- dat %>% filter(chr %in% nmtchr) # reduce dataset size prior to joining
 nmtjoin <-
   fuzzyjoin::fuzzy_inner_join(nmts, nmtdat, 
@@ -56,12 +64,12 @@ nmtjoin <-
                                      "start" = "windowStart",
                                      "end" = "windowEnd"),
                               match_fun = list(`==`, `>=`, `<=`))
-write_tsv(nmtjoin, here("ABBABABA", "Joined_nmts.txt"), col_names = TRUE) # 191 obs
+write_tsv(nmtjoin, here("data", "Joined_nmts.txt"), col_names = TRUE) # 191 obs
 nmtjoin %>% summarize(meanfdM = mean(f_dM),
                       minfdM = min(f_dM),
                       maxfdM = max(f_dM)) # 0.0546 mean
 
-contchr <- unique(cont$chr) # 87 unique chroms
+contchr <- unique(cont$chr) # 73 unique chroms
 contdat <- dat %>% filter(chr %in% contchr) # reduce dataset size
 contjoin <-
   fuzzyjoin::fuzzy_inner_join(cont, contdat, 
@@ -69,7 +77,7 @@ contjoin <-
                                      "start" = "windowStart",
                                      "end" = "windowEnd"),
                               match_fun = list(`==`, `>=`, `<=`))
-write_tsv(contjoin, here("ABBABABA", "Joined_cont.txt"), col_names = TRUE)
+write_tsv(contjoin, here("data", "Joined_cont.txt"), col_names = TRUE)
 contjoin %>% summarize(meanfdM = mean(f_dM),
                        minfdM = min(f_dM),
                        maxfdM = max(f_dM)) # 0.0607 mean

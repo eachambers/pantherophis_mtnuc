@@ -1,6 +1,7 @@
 library(here)
 library(tidyverse)
 library(cowplot)
+library(scattermore)
 theme_set(theme_cowplot())
 
 ## The following code generates Fig. 3A, the Manhattan plot of GWAS results (Fig. S4), 

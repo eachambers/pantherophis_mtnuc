@@ -10,11 +10,11 @@ library(algatr)
 ## This code is modified from Chambers et al. (2023). doi: https://doi.org/10.1093/sysbio/syac056
 
 ##    FILES REQUIRED:
-##          vcfs for NMTs and control loci (cznmtsnps.vcf & czcontsnps.vcf)
-##          fastas for NMTs and control loci (cznmtsnps.min4.fasta & czcontsnps.min4.fasta) <- vcfs converted to fasta using vcf2phylip.py
+##          vcfs for NMTs and control loci (cznmtsnps.vcf & czcontsnps2.vcf)
+##          fastas for NMTs and control loci (cznmtsnps.min4.fasta & czcontsnps2.min4.fasta) <- vcfs converted to fasta using vcf2phylip.py
 ##          mitotype assignments (cz_mitotypes.txt)
-##          vcfs for LD-pruned NMTs and control loci (cznmtsnps_ldp.vcf & czcontsnps_ldp.vcf) <- generated using `ld_pruning.sh` script
-##          fastas for LD-pruned NMTs and control loci (cznmtsnps_ldp.min1.fasta & czcontsnps_ldp.min1.fasta) <- vcfs converted to fasta using vcf2phylip.py
+##          vcfs for LD-pruned NMTs and control loci (cznmtsnps_ldp.vcf & czcontsnps2_ldp.vcf) <- generated using `ld_pruning.sh` script
+##          fastas for LD-pruned NMTs and control loci (cznmtsnps_ldp.fasta & czcontsnps2_ldp.fasta) <- vcfs converted to fasta using vcf2phylip.py
 
 ##    STRUCTURE OF CODE:
 ##              (1) Read in input files
@@ -36,8 +36,8 @@ mitotypes <- read_tsv(here("data", "cz_mitotypes.txt"), col_names = c("INDV", "m
 nmts <- process_seq(vcf_file = here("data", "cznmtsnps.vcf"),
                     fasta_file = here("data", "cznmtsnps.min4.fasta"),
                     mitotypes = mitotypes) # 30 inds of 38,553 vars (38,551 SNPs)
-cont <- process_seq(vcf_file = here("data", "czcontsnps.vcf"),
-                    fasta_file = here("data", "czcontsnps.min4.fasta"),
+cont <- process_seq(vcf_file = here("data", "czcontsnps2.vcf.gz"),
+                    fasta_file = here("data", "czcontsnps2.min4.fasta"),
                     mitotypes = mitotypes) # 30 inds of 163,960 vars (163,958 SNPs)
 
 
@@ -46,18 +46,18 @@ cont <- process_seq(vcf_file = here("data", "czcontsnps.vcf"),
 # Determine fixed differences between reference groups
 dataset = cont # cont or nmts
 dataset_name = "cont" # "cont" or "nmts"
-# If `save_file` set to TRUE, will save as e.g. "pure_allele_dict_nmts.rda"
-pure_allele_dict_noambig_cont <- allele_dict(dataset, dataset_name, save_file = FALSE) # only need to run once; 5,954 for NMTs and 27,790 for control
+# If `save_file` set to TRUE, will save as e.g. "pure_allele_dict_cont.rda"
+pure_allele_dict_noambig_cont <- allele_dict(dataset, dataset_name, save_file = TRUE, output_path = here("data", "/")) # only need to run once; 26,928 for control
 
 dataset = nmts # cont or nmts
 dataset_name = "nmts" # "cont" or "nmts"
 # If `save_file` set to TRUE, will save as e.g. "pure_allele_dict_nmts.rda"
-pure_allele_dict_noambig_nmts <- allele_dict(dataset, dataset_name, save_file = FALSE) # only need to run once; 5,954 for NMTs and 27,790 for control
+pure_allele_dict_noambig_nmts <- allele_dict(dataset, dataset_name, save_file = FALSE) # only need to run once; 5,954 for NMTs
 
 
 # (3) Calculate per-locus allele frequencies ------------------------------
 
-# TODO none of this is no longer necessary because of LD-pruning
+# TODO this is no longer necessary because of LD-pruning?
 # If above has already been run, can start below; will load object as `pure_allele_dict_noambig`:
 dataset = nmts # cont or nmts
 dataset_name = "nmts" # "cont" or "nmts"
@@ -74,7 +74,7 @@ threshold = 0.5 # change to 0.5, 0.75, 0.95
 
 # If `save_file` set to TRUE, will save file as e.g. "summary_nmts_0.5.txt" in `output_path`
 # Run below for both nmts and cont gene sets
-results <- freq_data(dataset = cont, 
+results <- freq_data(dataset = cont_ldp, 
                      dataset_name = "cont", 
                      pure_allele_dict = pure_allele_dict_noambig_cont, 
                      threshold, 
@@ -89,11 +89,11 @@ results$summary
 
 # Import NMTs and control SNPs that have been LD-pruned; see `ld_pruning.sh` for code to LD prune data
 nmts_ldp <- process_seq(vcf_file = here("data", "cznmtsnps_ldp.vcf"),
-                        fasta_file = here("data", "cznmtsnps_ldp.min1.fasta"),
+                        fasta_file = here("data", "cznmtsnps_ldp.fasta"),
                         mitotypes = mitotypes) # 30 inds, 14,330 SNPs (+INDV +mitotype cols)
-cont_ldp <- process_seq(vcf_file = here("data", "czcontsnps_ldp.vcf"),
-                        fasta_file = here("data", "czcontsnps_ldp.min1.fasta"),
-                        mitotypes = mitotypes) # 30 inds, 61,697 SNPs (+INDV +mitotype cols)
+cont_ldp <- process_seq(vcf_file = here("data", "czcontsnps2_ldp.vcf"),
+                        fasta_file = here("data", "czcontsnps2_ldp.fasta"),
+                        mitotypes = mitotypes) # 30 inds, 59,208 SNPs (+INDV +mitotype cols)
 
 freqs_cont <-
   cont_ldp %>% 
@@ -127,10 +127,10 @@ mod <- glm(classification ~ INDV + gene_set,
            family = binomial(link = "logit"),
            data = freqs)
 
-summary(mod) # gene_setnmts are statistically significant (p-value = 3.49e-07)
+summary(mod) # gene_setnmts are statistically significant (p-value = 7.30e-09)
 
 # Odds ratio
-exp(coef(mod)) # 1.074336 for gene_setnmts; i.e., 7% increase of matches in N-mts compared to control genes
+exp(coef(mod)) # 1.085002 for gene_setnmts; i.e., 8.5% increase of matches in N-mts compared to control genes
 
 # Save freq data for data visualization
 results <- freq_data(dataset = cont_ldp, 
@@ -179,7 +179,7 @@ admix_emoryi <-
 unadmixed <- bind_rows(pure_slow, pure_emoryi)
 admixed <- bind_rows(admix_slow, admix_emoryi)
 
-### N-mt genes
+### ------------ N-mt genes ------------ 
 # Import vcfs for N-mt and control gene SNPs that have been LD-pruned
 nmts_vcf <- read.vcfR(here("data", "cznmtsnps_ldp.vcf"))
 names_nmts <- names_helper(nmts_vcf)
@@ -223,16 +223,16 @@ unadmixed_mitotypes <-
 # Check ordering
 all(rownames(nmts_pure) == unadmixed_mitotypes$INDV)
 
-### Control genes
+### ------------ Control genes ------------ 
 # Import vcfs for N-mt and control gene SNPs that have been LD-pruned
-cont_vcf <- read.vcfR(here("data", "czcontsnps_ldp.vcf"))
+cont_vcf <- read.vcfR(here("data", "czcontsnps2_ldp.vcf"))
 names_cont <- names_helper(cont_vcf)
 
 # Convert to dosage matrix
 cont_dos <- vcf_to_dosage(cont_vcf)
 rownames(cont_dos) <- names_cont$INDV
 # Remove any columns that have NAs
-cont_dos_nonas <- cont_dos[, !apply(is.na(cont_dos), 2, any)] # 11933 remain
+cont_dos_nonas <- cont_dos[, !apply(is.na(cont_dos), 2, any)] # 10368 remain
 
 # Subset into unadmixed and admixed inds
 cont_pure <-
@@ -260,10 +260,47 @@ cont_admix_emoryi <-
 # Check ordering of mitotypes
 all(rownames(cont_pure) == unadmixed_mitotypes$INDV)
 
+### ------------ Lysosome genes ------------ 
+# Import vcf for lysosome SNPs
+lyso_vcf <- read.vcfR(here("data", "cz_lyso_snps.vcf"))
+names_lyso <- names_helper(lyso_vcf)
+
+# Convert to dosage matrix
+lyso_dos <- vcf_to_dosage(lyso_vcf) # 222,100
+rownames(lyso_dos) <- names_lyso$INDV
+# Remove any columns that have NAs
+lyso_dos_nonas <- lyso_dos[, !apply(is.na(lyso_dos), 2, any)] # 35,862 remain
+
+# Subset into unadmixed and admixed inds
+lyso_pure <-
+  as.data.frame(lyso_dos_nonas) %>% 
+  rownames_to_column(var = "INDV") %>% 
+  filter(INDV %in% unadmixed$sampleID) %>% 
+  column_to_rownames(var = "INDV") %>% 
+  as.matrix()
+# dplyr::select(where(~n_distinct(.) > 1)) # remove monomorphic loci
+
+lyso_admix_slow <-
+  as.data.frame(lyso_dos_nonas) %>% 
+  rownames_to_column(var = "INDV") %>% 
+  filter(INDV %in% admix_slow$sampleID) %>% 
+  column_to_rownames(var = "INDV") %>% 
+  as.matrix()
+
+lyso_admix_emoryi <-
+  as.data.frame(lyso_dos_nonas) %>% 
+  rownames_to_column(var = "INDV") %>% 
+  filter(INDV %in% admix_emoryi$sampleID) %>% 
+  column_to_rownames(var = "INDV") %>% 
+  as.matrix()
+
+# Check ordering of mitotypes; should be TRUE
+all(rownames(lyso_pure) == unadmixed_mitotypes$INDV)
+
 
 # (6) Run DAPC ------------------------------------------------------------
 
-### Nmts first
+### ------------ Nmts ------------ 
 dp = dapc(nmts_pure,
           grp = unadmixed_mitotypes$mitotype,
           n.da = 1,
@@ -284,7 +321,7 @@ pred_emoryi <- predict.dapc(dp,
                             newdata = nmts_admix_emoryi)
 pred_emoryi = as.data.frame(pred_emoryi$ind.scores)
 
-### Control genes now
+### ------------ Control genes ------------ 
 dp_cont = dapc(cont_pure,
                grp = unadmixed_mitotypes$mitotype,
                n.da = 1,
@@ -305,10 +342,32 @@ pred_emoryi_cont <- predict.dapc(dp_cont,
                             newdata = cont_admix_emoryi)
 pred_emoryi_cont = as.data.frame(pred_emoryi_cont$ind.scores)
 
+## ------------ Lysosome SNPs ------------ 
+dp_lyso = dapc(lyso_pure,
+               grp = unadmixed_mitotypes$mitotype,
+               n.da = 1,
+               n.pca = 4)
+pred_lyso = predict.dapc(dp_lyso,
+                         newdata = lyso_pure)
+pred_dat_lyso = as.data.frame(pred_lyso$ind.scores)
+# Add mitotype on to predictions
+pred_dat_lyso <- left_join(pred_dat_lyso %>% 
+                             rownames_to_column(var = "INDV"),
+                           unadmixed_mitotypes)
+
+### How well does the 'pure' DAPC predict mitotypes of admixed individuals?
+pred_slow_lyso <- predict.dapc(dp_lyso,
+                               newdata = lyso_admix_slow)
+pred_slow_lyso = as.data.frame(pred_slow_lyso$ind.scores)
+pred_emoryi_lyso <- predict.dapc(dp_lyso,
+                                 newdata = lyso_admix_emoryi)
+pred_emoryi_lyso = as.data.frame(pred_emoryi_lyso$ind.scores)
+
 
 # (7) Run MWU test --------------------------------------------------------
 
 # First, combine DAPC results from above
+## ------------ Nmts ------------ 
 pred_slow <- left_join(pred_slow %>% rownames_to_column(var = "INDV"), mitotypes)
 pred_slow <- pred_slow %>% 
   mutate(category = "admix_slow",
@@ -321,6 +380,7 @@ pred_emoryi <- pred_emoryi %>%
 
 dapc_nmts <- bind_rows(pred_slow, pred_emoryi)
 
+## ------------ Control genes ------------ 
 pred_slow_cont <- left_join(pred_slow_cont %>% rownames_to_column(var = "INDV"), mitotypes)
 pred_slow_cont <- pred_slow_cont %>% 
   mutate(category = "admix_slow",
@@ -332,8 +392,26 @@ pred_emoryi_cont <- pred_emoryi_cont %>%
          dataset = "cont")
 dapc_cont <- bind_rows(pred_slow_cont, pred_emoryi_cont)
 
-### Run MWU test
+## ------------ Lysosomes ------------ 
+pred_slow_lyso <- left_join(pred_slow_lyso %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_slow_lyso <- pred_slow_lyso %>% 
+  mutate(category = "admix_slow",
+         dataset = "cont")
+
+pred_emoryi_lyso <- left_join(pred_emoryi_lyso %>% rownames_to_column(var = "INDV"), mitotypes)
+pred_emoryi_lyso <- pred_emoryi_lyso %>% 
+  mutate(category = "admix_emoryi",
+         dataset = "cont")
+dapc_lyso <- bind_rows(pred_slow_lyso, pred_emoryi_lyso)
+
+### ------------ Run MWU test on Nmts vs control genes ------------  
 dapc_admixed <- bind_rows(dapc_nmts, dapc_cont)
 
-results <- wilcox.test(LD1 ~ dataset, dapc_admixed, exact = TRUE, paired = FALSE)
+results <- wilcox.test(LD1 ~ dataset, dapc_admixed, exact = TRUE)
 results
+
+### ------------ Run MWU test on Nmts vs lysosomes ------------  
+dapc_admixed_lyso <- bind_rows(dapc_nmts, dapc_lyso)
+
+results_lyso <- wilcox.test(LD1 ~ dataset, dapc_admixed_lyso, exact = TRUE)
+results_lyso

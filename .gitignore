@@ -5,3 +5,5 @@
 .DS_Store
 data/*
 data_viz/graveyard.R
+software/*
+outputs/*

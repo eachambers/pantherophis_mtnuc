@@ -2,6 +2,7 @@ library(tidyverse)
 library(here)
 library(cowplot)
 library(ggtree)
+theme_set(theme_cowplot())
 
 ## The following code takes in results from RF distances analysis and plots stacked barplots 
 ## based on proportions of N-mt and control gene trees that match to the species, 
@@ -16,6 +17,8 @@ library(ggtree)
 
 
 # (1) Process data --------------------------------------------------------
+
+
 
 nmt_plot <-
   nmt_results %>% 
@@ -41,6 +44,8 @@ plot_dat <- left_join(nmt_plot, cont_plot) %>% # joins by comp_tree
   pivot_longer(names_to = "dataset",
                values_to = "no_matches",
                cols = -c(comp_tree))
+
+# plot_dat <- read_tsv(here("data", "RFdists_results.txt"))
 
 
 # (2) Build plot ----------------------------------------------------------

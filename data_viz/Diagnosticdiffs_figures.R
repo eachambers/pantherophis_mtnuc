@@ -9,8 +9,9 @@ theme_set(theme_cowplot())
 
 ##    FILES REQUIRED:
 ##          RData objects with allele freqs for:
-##              - Control loci (freq_data_cont_ldp.rda)
-##              - Nmts (freq_data_nmts_ldp.rda)
+##              - Control loci (freq_data_cont_ldp_0.5.rda)
+##              - Nmts (freq_data_nmts_ldp_0.5.rda)
+##              - Lysosomes (XXX.rda)
 ##          Diagnostic difference summary files, one for each threshold (e.g., "summary_cont_ldp_0.5.txt)
 ##          Top significantly associated chromosomes ("top_sig_chroms.txt") from `GWAS_figures.R` script
 
@@ -194,7 +195,7 @@ grid.arrange(arrangeGrob(plots, left = ylab, bottom = xlab)) # export 7x4.5
 
 # (5) Fig. S6: DAPC results -----------------------------------------------
 
-# Below relies on objects generated using the Diagnosticdiff_analysis.R script.
+# Below relies on objects generated using the `Diagnosticdiffs_analysis.R` script.
 
 ### Nmt genes
 p_nmt <-
@@ -254,4 +255,34 @@ p_cont <-
                alpha = 0.25) +
   ggtitle("Control genes")
 
-plot_grid(p_nmt, p_cont, nrow = 1) # export 10x4
+### Lysosome genes
+p_lyso <-
+  ggplot() +
+  geom_density(data = pred_dat_lyso %>% 
+                 filter(mitotype == "slowinskii"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7") +
+  geom_density(data = pred_dat_lyso %>% 
+                 filter(mitotype == "emoryi"),
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d") +
+  geom_density(data = pred_slow_lyso,
+               aes(x = LD1),
+               stat = "density",
+               color = "#1743d7",
+               fill = "#1743d7",
+               alpha = 0.25) +
+  geom_density(data = pred_emoryi_lyso,
+               aes(x = LD1),
+               stat = "density",
+               color = "#f3b65d",
+               fill = "#f3b65d",
+               alpha = 0.25) +
+  ggtitle("Lysosome genes")
+
+plot_grid(p_nmt, p_cont, p_lyso, nrow = 1) # export 10x4 OR NEW 12x4
+
