@@ -19,7 +19,7 @@ library(scattermore) # efficient plotting of points for Manhattan plot
 ##              (4) Get summary statistics
 
 # Load relevant functions
-source(here("analysis", "GWAS.R"))
+source(here("analysis", "GWAS_functions.R"))
 
 
 # (1) Process NMT and control data ----------------------------------------
