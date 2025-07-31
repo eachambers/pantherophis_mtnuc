@@ -142,3 +142,54 @@ pcoa_p_nogutt <-
 
 pcoa_p_nogutt
 ggsave(here("outputs/PCoA_plot_nogutt.pdf"), width = 9, height = 6.3)
+
+
+# RUNNING PCOA WITHOUT GUTTATUS or MEAHLLMORUM -------------------------------------------
+
+# Having a divergent population can skew PCoA results; the following runs
+# the PCoA without guttatus or meahllmorum individuals
+
+# Import data -------------------------------------------------------------
+
+# There is one guttatus and one meahllmorum sample
+gutt_meah <- i2p %>% filter(pop == "guttatus" | pop == "meahllmorum") %>% pull(sampleID)
+samps_sub <- samps %>% filter(!sampleID %in% gutt_meah)
+
+# Remove guttatus and meahllmorum from IBS matrix
+rownames(ma) <- samps$sampleID
+colnames(ma) <- samps$sampleID
+ma_sub <- ma[,!colnames(ma) %in% gutt_meah]
+ma_sub <- ma_sub[!rownames(ma_sub) %in% gutt_meah, ]
+
+
+# Performing PCoA ---------------------------------------------------------
+
+# Constrained PCoA using population structure (distance-based RDA)
+conds = data.frame(pop = samps_sub$pop)
+pp = vegan::capscale(ma_sub ~ conds$pop)
+
+
+# Plot the results with ggplot ------------------------------------------------
+
+smry <- summary(pp)
+df1 <- data.frame(smry$sites[,2:3]) # MDS1 and MDS2
+df <- bind_cols(df1, samps_sub)
+
+colors_sub = c("emoryi" = "#be9739", "slowinskii" = "#75a3dd")
+
+ggplot(df, aes(x = MDS1, y = MDS2)) +
+  geom_hline(yintercept = 0, linetype = "dotted", color = "darkgrey") +
+  geom_vline(xintercept = 0, linetype = "dotted", color = "darkgrey") +
+  geom_point(aes(color = pop), size = 4) +
+  theme(legend.position = "none",
+        axis.title = element_text(size = 15),
+        axis.text = element_text(size = 12)) +
+  scale_color_manual(values = colors_sub) +
+  geom_label(aes(color = pop), label = df$field_no, nudge_y = 0.1,
+             size = 3) +
+  ggtitle(paste0(smry$call))
+
+
+# Export PDF --------------------------------------------------------------
+
+ggsave(here("outputs/PCoA_plot_noguttmeah.pdf"), width = 9, height = 6.3)

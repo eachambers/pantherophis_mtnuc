@@ -1,74 +1,3 @@
-# Running GWAS ------------------------------------------------------------
-# The following functions are adapted from M. Matz code: 
-# https://github.com/z0on/Multivariate_GWAS
-
-#' Empirical p-value function
-#'
-#' @param Obs 
-#' @param Null 
-#' @param nq 
-#'
-#' @returns
-#' @export
-getEmpP <- function(Obs, Null, nq = 10000){
-  #Null=nulls;Obs=snp.scores
-  pb = txtProgressBar(0, length(Obs))
-  Null = abs(Null)
-  Obs = abs(Obs)
-  LN = length(Null)
-  logq = 1+log(seq(1/nq, 1, 1/nq), nq + 1)
-  qn = quantile(Null,logq)
-  perq = length(Null)/nq
-  lastnull = Null[Null > qn[nq - 1]]
-  pvals = c()
-  for (i in 1:length(Obs)) {
-    qo = sum(qn < Obs[i])
-    if(qo == 0) { 
-      pval = 1
-    } else {
-      if (qo == nq) {
-        pval = 0.5/LN
-      } else { 
-        if (qo < nq - 1) {
-          pval = 1 - (logq[qo])
-        } else {
-          pval = sum(lastnull >= Obs[i])/LN
-        }
-      }
-    }
-    pvals[i] = pval
-    setTxtProgressBar(pb, i)
-  }
-  return(pvals)
-}
-
-#' Function to select the best alpha in `glmnet`
-#' Cross-validation using provided test set
-#' 
-#' @param train 
-#' @param test 
-#' @param tr.tr 
-#' @param tr.tst 
-#' @param alpha 
-#'
-#' @returns
-#' @export
-gnets <- function(train, test, tr.tr, tr.tst, alpha = 0.5) {
-  trains.CV = cv.glmnet(train, tr.tr, nfolds = 10, alpha = alpha, family = "gaussian")
-  # The definition of the lambda parameter:
-  lambda.trains = trains.CV$lambda.min
-  # Fit the elastic net predictor to the training data
-  trains = glmnet(train, tr.tr, family = "gaussian", alpha = alpha, lambda = lambda.trains)
-  # predict trait in test set
-  preds = predict(trains, test, type = "response", s = lambda.trains)
-  #	plot(preds~tr.tst,xlab="true",ylab="predicted",main=alpha)
-  #	abline(0,1,col="red")
-  r2 = summary(lm(preds ~ tr.tst))$adj.r.squared
-  #	mtext(paste("a=",alpha,"  R2=",round(r2,2)))
-  return(list(r2, trains, preds))	
-}
-
-
 # Processing GWAS results -------------------------------------------------
 
 #' Helper function to calculate relevant GWAS statistics
@@ -77,15 +6,15 @@ gnets <- function(train, test, tr.tr, tr.tst, alpha = 0.5) {
 #' @param gwas an RData object outputted from GWAS analysis
 #'
 #' @return gwas df with position in Mb and signed log p-value columns
-gwas_stats <- function(gwas) {
-  # Identify which Z-scores fall above 0
-  sign = as.numeric(gwas$zscore > 0) # returns 1s and 0s for each SNP
-  sign[sign == 0] = -1 # switches occurrences of 0s to -1s
-  gwas$signed.logp = gwas$logp*sign # assign signs to log p-values based on Z-score results
-  gwas$pos.Mb = gwas$pos/1e+6 # convert bp to Mb
-  
-  return(gwas)
-}
+# gwas_stats <- function(gwas) {
+#   # Identify which Z-scores fall above 0
+#   sign = as.numeric(gwas$zscore > 0) # returns 1s and 0s for each SNP
+#   sign[sign == 0] = -1 # switches occurrences of 0s to -1s
+#   gwas$signed.logp = gwas$logp*sign # assign signs to log p-values based on Z-score results
+#   gwas$pos.Mb = gwas$pos/1e+6 # convert bp to Mb
+#   
+#   return(gwas)
+# }
 
 #' Function to visualize outlier SNPs occurring in certain regions of the genome (i.e., N-mts)
 #'
