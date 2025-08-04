@@ -95,15 +95,24 @@ gff_genes <- gff %>%
   mutate(gene = str_remove_all(gene, "gene=")) %>% 
   dplyr::select(chrom, start, end, gene)
 
+# The COX genes need to be retrieved using LOC numbers
+cox <- read_tsv(here("data", "COXgene_LOC.txt"), col_names = c("gene_name", "gene"))
+# Replace these 14 occurrences with LOC numbers instead of gene names
+cox_regions <- left_join(cox, nmtcont %>% rename(gene_name = gene)) %>% 
+  dplyr::select(-gene_name)
+# Remove COX genes from `nmtcont` and bind with `cox_regions`
+nmtcont <-
+  nmtcont %>% 
+  filter(!gene %in% cox$gene_name) %>% 
+  bind_rows(cox_regions)
+
 gff_genes <- left_join(gff_genes, nmtcont) %>% 
   mutate(snp_in_nmt = case_when(category == "nmt" ~ 1,
                                 .default = 0))
 
 # Verify that all were found
 nrow(gff_genes %>% filter(category == "control")) # 139 genes; CORRECT
-nrow(gff_genes %>% filter(category == "nmt")) # 153 genes vs 167 in `nmts`
-
-# nmts %>% filter(!gene %in% gff_genes$gene) # 14 nmt genes not found in ref genome gff
+nrow(gff_genes %>% filter(category == "nmt")) # 167 genes; CORRECT
 
 
 # (3) Process GWAS data ---------------------------------------------------
@@ -117,8 +126,8 @@ files <- list.files(here("data/GWAS"), pattern = "RData") %>%
 dat <-
   1:length(files) %>% 
   lapply(function(x) {
-    load(here("GWAS", files[x]))
-    gwas %>% 
+    load(here("data", "GWAS", files[x]))
+    gwas <- gwas %>% 
       mutate(abs_beta = abs(beta)) %>% 
       left_join(gathered) %>% 
       mutate(snp_in_nmt = case_when(category == "NMT" ~ 1,
@@ -128,66 +137,49 @@ dat <-
   dplyr::bind_rows()
 
 
-# (4) Calculate stats -----------------------------------------------------
+# (4) Combine GWAS results with genes -------------------------------------
 
-# Calculate max absolute per-gene beta values +/-2kb on either side of the gene
+# Make sure column types are consistent for fuzzy joining
+dat <- dat %>% 
+  mutate(chrom = as.character(chrom),
+         pos = as.numeric(pos),
+         abs_beta = as.numeric(abs_beta))
 
+gff_genes <- gff_genes %>% 
+  mutate(chrom = as.character(chrom),
+         start = as.numeric(start),
+         end = as.numeric(end))
 
-# Save GWAS results for all SNPs
-write_tsv(dat, here("data", "GWAS_results.txt"), col_names = TRUE)
+# Calculate max and mean absolute per-gene beta values
+result <- fuzzy_inner_join(dat, gff_genes,
+                           by = c("chrom" = "chrom",
+                                  "pos" = "start",
+                                  "pos" = "end"),
+                           match_fun = list(`==`, `>=`, `<=`)) %>%
+  group_by(GENE) %>%
+  summarize(max_absbeta = max(abs_beta, na.rm = TRUE),
+            mean_absbeta = mean(abs_beta, na.rm = TRUE)) %>%
+  ungroup()
 
+# Calculate max absolute per-gene beta values with +/-2kb flanking regions
+gff_genes_flank <- gff_genes %>% 
+  mutate(start_flank = start - 2000,
+         end_flank = end + 2000)
 
+result_flank <- fuzzy_inner_join(dat, gff_genes_flank,
+                                 by = c("chrom" = "chrom",
+                                        "pos" = "start_flank",
+                                        "pos" = "end_flank"),
+                                 match_fun = list(`==`, `>=`, `<=`)) %>%
+  group_by(GENE) %>%
+  summarize(max_absbeta = max(abs_beta, na.rm = TRUE),
+            mean_absbeta = mean(abs_beta, na.rm = TRUE)) %>%
+  ungroup()
 
-# GRAVEYARD ---------------------------------------------------------------
-
-# Retrieve only significant outliers based on two alpha thresholds
-# sig_snps_0.01 <- dat %>%
-#   dplyr::filter(signed.logp > -log10(0.01)) # 144,823 at alpha=0.01
-# sig_snps_0.01$chrom <- as.character(sig_snps_0.01$chrom)
-
-# sig_snps_0.05 <- dat %>% 
-#   dplyr::filter(signed.logp > -log10(0.05)) # 954,013 at alpha=0.05
-# sig_snps_0.05$chrom <- as.character(sig_snps_0.05$chrom)
-
-# Get summary statistics (number of outliers per chrom)
-# chrom_sites_0.01 <- sig_snps_0.01 %>% group_by(chrom) %>% count() %>% ungroup()
-# chrom_sites_0.01 %>% summarize(min_outliers = min(n),
-#                                              max_outliers = max(n),
-#                                              mean_outliers = mean(n))
-
-# chrom_sites_0.05 <- sig_snps_0.05 %>% group_by(chrom) %>% count() %>% ungroup()
-# chrom_sites_0.05 %>% summarize(min_outliers = min(n),
-#                                              max_outliers = max(n),
-#                                              mean_outliers = mean(n))
-
-
-# (3) Join GWAS results with NMTs and cont genes --------------------------
-
-# Do below for both alpha thresholds
-nmtdat <- left_join(sig_snps_0.05, nmt_gathered) %>% 
-  dplyr::select(chrom, pos, zscore, pos.Mb, signed.logp, r2, category) %>%
-  distinct() %>%
-  replace_na(list(category = "non-NMT"))
-# write_tsv(nmtdat, here("GWAS", "GWAS_NMT_sigsnps_0.05.txt")) # change file name accordingly
-
-nmtdat %>% 
-  filter(category == "NMT") %>% 
-  summarize(n()) # 128 SNPs at 0.01 / 1169 SNPs at 0.05
-
-### Same as above but for control genes
-contdat <- left_join(sig_snps_0.05, cont_gathered) %>% 
-  dplyr::select(chrom, pos, zscore, pos.Mb, signed.logp, r2, category) %>%
-  distinct() %>%
-  replace_na(list(category = "non-control"))
-# write_tsv(contdat, here("GWAS", "GWAS_control_sigsnps_0.05.txt"))
-
-contdat %>% 
-  filter(category == "cont") %>% 
-  summarize(n()) # 529 SNPs at 0.01 / 5592 SNPs at 0.05
+# Export results
 
 
-# (4) Get summary statistics ----------------------------------------------
 
-# Which chroms have both Nmt and control genes?
-chroms <- inner_join(cont %>% dplyr::select(chrom) %>% distinct(), 
-                     nmts %>% dplyr::select(chrom) %>% distinct())
+# (5) Mann-Whitney U test ---------------------------------------------------
+
+# If starting here, retrieve input data:
