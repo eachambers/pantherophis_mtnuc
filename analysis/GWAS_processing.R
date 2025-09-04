@@ -2,6 +2,8 @@ library(here)
 library(tidyverse)
 library(fuzzyjoin)
 library(padr)
+library(data.table)
+library(GenomicRanges) # BiocManager::install("GenomicRanges")
 # library(GWASTools) # BiocManager::install("GWASTools")
 # library(scattermore) # efficient plotting of points for Manhattan plot
 
@@ -14,9 +16,10 @@ library(padr)
 
 ##    STRUCTURE OF CODE:
 ##              (1) Process NMT and control data
-##              (2) Process association analysis data
-##              (3) Merge association analysis results with NMT and control data, exporting sig SNPs
-##              (4) Get summary statistics
+##              (2) Process genome annotations
+##              (3) Process association analysis results
+##              (4) Combine association analysis results with genome annotations
+##              (5) Run Mann-Whitney test on absolute betas
 
 # Load relevant functions
 source(here("analysis", "GWAS_functions.R"))
@@ -72,7 +75,6 @@ cont_gathered <-
   dplyr::select(-pos_name) %>% 
   mutate(category = "cont")
 
-gathered <- bind_rows(nmt_gathered, cont_gathered)
 nmtcont <- bind_rows(nmts %>% mutate(category = "nmt"), 
                      cont %>% mutate(category = "control"))
 
@@ -97,22 +99,21 @@ gff_genes <- gff %>%
 
 # The COX genes need to be retrieved using LOC numbers
 cox <- read_tsv(here("data", "COXgene_LOC.txt"), col_names = c("gene_name", "gene"))
-# Replace these 14 occurrences with LOC numbers instead of gene names
-cox_regions <- left_join(cox, nmtcont %>% rename(gene_name = gene)) %>% 
-  dplyr::select(-gene_name)
+# Replace these 14 occurrences with locus numbers instead of gene names (i.e., retain gff formatting)
+cox_regions <- left_join(cox, nmtcont) %>% na.omit()
+
 # Remove COX genes from `nmtcont` and bind with `cox_regions`
 nmtcont <-
   nmtcont %>% 
   filter(!gene %in% cox$gene_name) %>% 
-  bind_rows(cox_regions)
+  bind_rows(cox_regions %>% dplyr::select(-gene_name))
 
-gff_genes <- left_join(gff_genes, nmtcont) %>% 
-  mutate(snp_in_nmt = case_when(category == "nmt" ~ 1,
-                                .default = 0))
+# Do a check to ensure that all relevant genes were found
+nrow(gff_genes %>% left_join(nmtcont) %>% filter(category == "control")) # 139 genes; CORRECT
+nrow(gff_genes %>% left_join(nmtcont) %>% filter(category == "nmt")) # 167 genes; CORRECT
 
-# Verify that all were found
-nrow(gff_genes %>% filter(category == "control")) # 139 genes; CORRECT
-nrow(gff_genes %>% filter(category == "nmt")) # 167 genes; CORRECT
+# Export gff_genes for sanity
+write_tsv(gff_genes, here("data", "gff_genes.txt"), col_names = TRUE)
 
 
 # (3) Process GWAS data ---------------------------------------------------
@@ -121,65 +122,100 @@ nrow(gff_genes %>% filter(category == "nmt")) # 167 genes; CORRECT
 # calculate absolute beta and determine which SNPs are within Nmts or control 
 # genes, and export these data as a single file
 files <- list.files(here("data/GWAS"), pattern = "RData") %>% 
-  stringr::str_subset(., "traits_etc_0.RData", negate = TRUE)
+  stringr::str_subset(., "traits_etc_0.RData", negate = TRUE) # should be 25
 
 dat <-
   1:length(files) %>% 
   lapply(function(x) {
     load(here("data", "GWAS", files[x]))
     gwas <- gwas %>% 
-      mutate(abs_beta = abs(beta)) %>% 
-      left_join(gathered) %>% 
-      mutate(snp_in_nmt = case_when(category == "NMT" ~ 1,
-                                    .default = 0))
+      mutate(abs_beta = abs(beta))
     return(gwas)
   }) %>% 
   dplyr::bind_rows()
 
+# Export for sanity
+write_tsv(dat, here("data", "GWAS_results.txt"))
+
 
 # (4) Combine GWAS results with genes -------------------------------------
 
-# Make sure column types are consistent for fuzzy joining
-dat <- dat %>% 
-  mutate(chrom = as.character(chrom),
-         pos = as.numeric(pos),
-         abs_beta = as.numeric(abs_beta))
+# gff_genes <- read_tsv(here("data", "gff_genes.txt"))
+# dat <- read_tsv(here("data", "GWAS_results.txt"))
 
-gff_genes <- gff_genes %>% 
-  mutate(chrom = as.character(chrom),
-         start = as.numeric(start),
-         end = as.numeric(end))
+# Convert to GRanges
+snps_gr <- GRanges(seqnames = dat$chrom,
+                   ranges = IRanges(start = dat$pos, end = dat$pos),
+                   abs_beta = dat$abs_beta)
+genes_gr <- GRanges(seqnames = gff_genes$chrom,
+                    ranges = IRanges(start = gff_genes$start, end = gff_genes$end),
+                    gene_id = gff_genes$gene)
 
-# Calculate max and mean absolute per-gene beta values
-result <- fuzzy_inner_join(dat, gff_genes,
-                           by = c("chrom" = "chrom",
-                                  "pos" = "start",
-                                  "pos" = "end"),
-                           match_fun = list(`==`, `>=`, `<=`)) %>%
-  group_by(GENE) %>%
-  summarize(max_absbeta = max(abs_beta, na.rm = TRUE),
-            mean_absbeta = mean(abs_beta, na.rm = TRUE)) %>%
-  ungroup()
+# Find overlaps between SNPs and genes; ignore the warning message
+hits <- findOverlaps(snps_gr, genes_gr)
 
-# Calculate max absolute per-gene beta values with +/-2kb flanking regions
-gff_genes_flank <- gff_genes %>% 
-  mutate(start_flank = start - 2000,
-         end_flank = end + 2000)
+# Extract SNP-gene pairs
+df <- data.frame(gene_id = mcols(genes_gr)$gene_id[subjectHits(hits)],
+                 abs_beta = mcols(snps_gr)$abs_beta[queryHits(hits)])
 
-result_flank <- fuzzy_inner_join(dat, gff_genes_flank,
-                                 by = c("chrom" = "chrom",
-                                        "pos" = "start_flank",
-                                        "pos" = "end_flank"),
-                                 match_fun = list(`==`, `>=`, `<=`)) %>%
-  group_by(GENE) %>%
-  summarize(max_absbeta = max(abs_beta, na.rm = TRUE),
-            mean_absbeta = mean(abs_beta, na.rm = TRUE)) %>%
-  ungroup()
+nmt_correct_names <- nmtcont %>% filter(category == "nmt")
 
-# Export results
+# Calculate maximum absolute beta for each gene
+max_beta <- df %>%
+  group_by(gene_id) %>% 
+  summarize(max_abs_beta = max(abs_beta)) %>% 
+  # Add col with whether it's nmt or not
+  mutate(is_gene_nmt = case_when(gene_id %in% nmt_correct_names$gene ~ 1,
+                                 .default = 0))
 
+# Check to see how many nmt genes retained
+# cont has 139; nmts has 167
+max_beta %>% 
+  filter(gene_id %in% cont$gene) %>% 
+  # filter(gene_id %in% nmt_correct_names$gene) %>% 
+  nrow()
+
+# Export 23236 rows
+write_tsv(max_beta, here("data", "abs_max_beta_noflank.txt"))
+
+# ========
+# Add flanking regions of +/-2Kb to genes
+genes_gr_flank <- resize(genes_gr, 
+                         width = width(genes_gr) + 4000, # add 2kb to each side
+                         fix = "center")                 # keep gene centered
+
+# Find overlaps between SNPs and genes
+hits_flank <- findOverlaps(snps_gr, genes_gr_flank)
+
+# Extract SNP-gene pairs
+df_flank <- data.frame(gene_id = mcols(genes_gr_flank)$gene_id[subjectHits(hits_flank)],
+                 abs_beta = mcols(snps_gr)$abs_beta[queryHits(hits_flank)])
+
+max_beta_flank <- df_flank %>%
+  group_by(gene_id) %>% 
+  summarize(max_abs_beta = max(abs_beta)) %>% 
+  # Add col with whether it's nmt or not
+  mutate(is_gene_nmt = case_when(gene_id %in% nmt_correct_names$gene ~ 1,
+                                 .default = 0))
+
+# Export 23638 rows
+write_tsv(max_beta_flank, here("data", "abs_max_beta_2kbflank.txt"))
 
 
 # (5) Mann-Whitney U test ---------------------------------------------------
 
 # If starting here, retrieve input data:
+# max_beta_flank <- read_tsv(here("data", "abs_max_beta_2kbflank.txt"))
+
+# Run Mann-Whitney test; 0 is automatically assigned the first group and 1 is the second
+# which means that alternative = "less" is testing whether non-NMTs have significantly lower
+# abs_beta values than NMT genes
+mwu <- wilcox.test(data = max_beta_flank, max_abs_beta ~ is_gene_nmt, alternative = "less")
+
+# Could manually set the levels on the is_gene_nmt column such that a 1 is first
+max_beta_flank$is_gene_nmt <- factor(max_beta_flank$is_gene_nmt, levels = c("1", "0"))
+# Check
+levels(max_beta_flank$is_gene_nmt)
+# Run test again, now specifying 'greater' because NMT will appear first and you want to test
+# whether NMT genes have higher abs beta values:
+mwu <- wilcox.test(data = max_beta_flank, max_abs_beta ~ is_gene_nmt, alternative = "greater")
