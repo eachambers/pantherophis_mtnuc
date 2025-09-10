@@ -100,7 +100,7 @@ gff_genes <- gff %>%
 # The COX genes need to be retrieved using LOC numbers
 cox <- read_tsv(here("data", "COXgene_LOC.txt"), col_names = c("gene_name", "gene"))
 # Replace these 14 occurrences with locus numbers instead of gene names (i.e., retain gff formatting)
-cox_regions <- left_join(cox, nmtcont) %>% na.omit()
+cox_regions <- left_join(cox, nmtcont %>% dplyr::rename(gene_name = gene)) %>% na.omit()
 
 # Remove COX genes from `nmtcont` and bind with `cox_regions`
 nmtcont <-
@@ -132,10 +132,10 @@ dat <-
       mutate(abs_beta = abs(beta))
     return(gwas)
   }) %>% 
-  dplyr::bind_rows()
+  dplyr::bind_rows() # 26,988,595
 
 # Export for sanity
-write_tsv(dat, here("data", "GWAS_results.txt"))
+# write_tsv(dat, here("data", "GWAS_results.txt"))
 
 
 # (4) Combine GWAS results with genes -------------------------------------
@@ -152,13 +152,19 @@ genes_gr <- GRanges(seqnames = gff_genes$chrom,
                     gene_id = gff_genes$gene)
 
 # Find overlaps between SNPs and genes; ignore the warning message
-hits <- findOverlaps(snps_gr, genes_gr)
+hits <- findOverlaps(snps_gr, genes_gr) # 13,976,120
 
-# Extract SNP-gene pairs
+# Convert to df to extract SNP-gene pairs
 df <- data.frame(gene_id = mcols(genes_gr)$gene_id[subjectHits(hits)],
-                 abs_beta = mcols(snps_gr)$abs_beta[queryHits(hits)])
+                 abs_beta = mcols(snps_gr)$abs_beta[queryHits(hits)]) # 13,976,120
 
 nmt_correct_names <- nmtcont %>% filter(category == "nmt")
+
+# Of the 13M SNPs found in genes, how many are within N-mt genes? And within control genes?
+df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% nrow() # 37,942
+df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 167
+df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% nrow() # 157,026
+df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 139
 
 # Calculate maximum absolute beta for each gene
 max_beta <- df %>%
@@ -178,7 +184,7 @@ max_beta %>%
 # Export 23236 rows
 write_tsv(max_beta, here("data", "abs_max_beta_noflank.txt"))
 
-# ========
+# ============================================================
 # Add flanking regions of +/-2Kb to genes
 genes_gr_flank <- resize(genes_gr, 
                          width = width(genes_gr) + 4000, # add 2kb to each side
@@ -191,6 +197,12 @@ hits_flank <- findOverlaps(snps_gr, genes_gr_flank)
 df_flank <- data.frame(gene_id = mcols(genes_gr_flank)$gene_id[subjectHits(hits_flank)],
                  abs_beta = mcols(snps_gr)$abs_beta[queryHits(hits_flank)])
 
+# Of the 13M SNPs found in genes, how many are within N-mt genes? And within control genes?
+df_flank %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% nrow() # 51,256
+df_flank %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 167
+df_flank %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% nrow() # 167,036
+df_flank %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 139
+
 max_beta_flank <- df_flank %>%
   group_by(gene_id) %>% 
   summarize(max_abs_beta = max(abs_beta)) %>% 
@@ -202,7 +214,7 @@ max_beta_flank <- df_flank %>%
 write_tsv(max_beta_flank, here("data", "abs_max_beta_2kbflank.txt"))
 
 
-# (5) Mann-Whitney U test ---------------------------------------------------
+# (5) Mann-Whitney U test: N-mt genes vs all other SNPs ---------------------
 
 # If starting here, retrieve input data:
 # max_beta_flank <- read_tsv(here("data", "abs_max_beta_2kbflank.txt"))
@@ -219,3 +231,15 @@ levels(max_beta_flank$is_gene_nmt)
 # Run test again, now specifying 'greater' because NMT will appear first and you want to test
 # whether NMT genes have higher abs beta values:
 mwu <- wilcox.test(data = max_beta_flank, max_abs_beta ~ is_gene_nmt, alternative = "greater")
+
+
+# (6) Mann-Whitney U test: N-mt vs. control genes ---------------------------
+
+# Extract N-mt and control genes from the max beta df
+relevant_genes <- bind_rows(nmt_correct_names %>% dplyr::select(-category), cont)
+max_beta_flank_subset <- max_beta_flank %>% filter(gene_id %in% relevant_genes$gene) # 306 genes total
+# Check levels for sanity
+levels(max_beta_flank_subset$is_gene_nmt)
+
+# Run MWU test
+mwu <- wilcox.test(data = max_beta_flank_subset, max_abs_beta ~ is_gene_nmt, alternative = "greater")
