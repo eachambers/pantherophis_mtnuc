@@ -51,9 +51,9 @@ colors = c("emoryi" = "#be9739",
 
 # parentals <- c("DBS 789", "JJB 6167", "JJB 7567", "TJH 3395")
 
-# pcoa_p <-
-  # ggplot(df, aes(x = MDS1, y = MDS2)) +
-  ggplot(df, aes(x = CAP1, y = CAP2)) +
+pcoa_p <-
+  ggplot(df, aes(x = MDS1, y = MDS2)) +
+  # ggplot(df, aes(x = CAP1, y = CAP2)) +
   geom_hline(yintercept = 0, linetype = "dotted", color = "darkgrey") +
   geom_vline(xintercept = 0, linetype = "dotted", color = "darkgrey") +
   geom_point(aes(color = pop), size = 4) +

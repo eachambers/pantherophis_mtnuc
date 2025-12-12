@@ -19,7 +19,10 @@ library(GenomicRanges) # BiocManager::install("GenomicRanges")
 ##              (2) Process genome annotations
 ##              (3) Process association analysis results
 ##              (4) Combine association analysis results with genome annotations
-##              (5) Run Mann-Whitney test on absolute betas
+##              (5) Run Mann-Whitney U test on absolute betas
+##              (6) Run Mann-Whitney U test on N-mt vs control genes
+##              (7) XXX
+
 
 # Load relevant functions
 source(here("analysis", "GWAS_functions.R"))
@@ -124,6 +127,9 @@ write_tsv(gff_genes, here("data", "gff_genes.txt"), col_names = TRUE)
 files <- list.files(here("data/GWAS"), pattern = "RData") %>% 
   stringr::str_subset(., "traits_etc_0.RData", negate = TRUE) # should be 25
 
+# files <- list.files(here("data/old_GWAS/12_2023_emslow"), pattern = "RData") %>% 
+#   stringr::str_subset(., "traits_etc_0.RData", negate = TRUE) # should be 25
+
 dat <-
   1:length(files) %>% 
   lapply(function(x) {
@@ -134,14 +140,8 @@ dat <-
   }) %>% 
   dplyr::bind_rows() # 26,988,595
 
-# Export for sanity
-# write_tsv(dat, here("data", "GWAS_results.txt"))
-
 
 # (4) Combine GWAS results with genes -------------------------------------
-
-# gff_genes <- read_tsv(here("data", "gff_genes.txt"))
-# dat <- read_tsv(here("data", "GWAS_results.txt"))
 
 # Convert to GRanges
 snps_gr <- GRanges(seqnames = dat$chrom,
@@ -243,3 +243,35 @@ levels(max_beta_flank_subset$is_gene_nmt)
 
 # Run MWU test
 mwu <- wilcox.test(data = max_beta_flank_subset, max_abs_beta ~ is_gene_nmt, alternative = "greater")
+
+
+# (7) Adjusted p-values from association analysis ---------------------------
+
+sig = 0.05
+threshold = -log(sig)
+
+outliers <- dat %>% filter(logp.adj >= threshold)
+
+sign = as.numeric(dat$zscore > 0) # returns 1s and 0s for each SNP
+sign[sign == 0] = -1 # switches occurrences of 0s to -1s
+dat$signed.logp = dat$logp*sign # assign signs to log p-values based on Z-score results
+dat$pos.Mb = dat$pos/1e+6 # convert bp to Mb
+
+  sig_snps <- dat %>% 
+    dplyr::filter(signed.logp > -log10(sig))
+
+  dat$signed.logpadj = dat$logp.adj*sign # assign signs to log p-values based on Z-score results
+
+  sig_snps_adj <- dat %>% 
+    dplyr::filter(signed.logpadj > -log10(sig))
+
+# Convert back to original p-values
+dat$pvals = 10^(-dat$logp)
+dat$pvals_adjusted_after = p.adjust(dat$pvals, method = "fdr")
+
+dat %>% filter(pvals_adjusted_after <= 0.05)
+
+# Overall outliers
+outliers <- dat %>% filter(logp.adj >= threshold)
+
+# (8) Per-scaffold summary statistics ---------------------------------------
