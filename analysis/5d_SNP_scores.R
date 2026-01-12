@@ -6,10 +6,23 @@ library(algatr)
 library(vcfR)
 theme_set(theme_cowplot())
 
+## The following code generates SNP scores along PC1 and conducts a MWU test
+## to assess whether there is an absolute loading difference between N-mt SNPs 
+## and those in control genes.
+
+##    FILES REQUIRED:
+##          N-mt and control gene SNPs for samples at contact zone ("cznmtsnps.vcf" and "czcontsnps2.vcf.gz")
+##          Ordering of samples in vcf ("bams")
+##          Assignment of samples to mitotype ("cz_mitotypes.txt")
+
+##    STRUCTURE OF CODE:
+##              (1) Import data
+##              (2) Run PCA and extract loadings
+##              (3) Visualize results (Fig. 3A)
+
 
 # (1) Import data ---------------------------------------------------------
 
-# vcf <- vcfR::read.vcfR(here("data", "cz_snps.vcf.gz"))
 nmtvcf <- vcfR::read.vcfR(here("data", "cznmtsnps.vcf"))
 contvcf <- vcfR::read.vcfR(here("data", "czcontsnps2.vcf.gz"))
 
@@ -33,7 +46,7 @@ mitotypes <- read_tsv(here("data", "cz_mitotypes.txt"), col_names = c("sampleID"
 metadata <- left_join(bams, mitotypes) %>% dplyr::select(bamname, mitotype)
 
 
-# (2) Calculate distances ----------------------------------------------
+# (2) Run PCA and extract loadings ----------------------------------------
 
 pca <- prcomp(gen, center = TRUE, scale. = TRUE)
 head(pca$rotation)
@@ -45,12 +58,6 @@ snp_pc1 <- as.data.frame(pca$rotation[, 1]) %>%
 abs_snp_pc1 <- abs(snp_pc1)   # often used for magnitude comparison
 
 # Filter Nmt and control SNPs
-nmt_snpscores <- snp_pc1 %>% filter(SNP %in% colnames(nmtdos))
-cont_snpscores <- snp_pc1 %>% filter(SNP %in% colnames(contdos))
-
-wilcox.test(nmt_snpscores$SNP_scores, cont_snpscores$SNP_scores, alternative = "greater")
-
-# Try with absolute values
 abs_snp_pc1 <- snp_pc1 %>% 
     mutate(abs_snpscore = abs(snp_pc1$SNP_scores))
 # Filter Nmt and control SNPs
@@ -58,16 +65,8 @@ abs_nmt_snpscores <- abs_snp_pc1 %>% filter(SNP %in% colnames(nmtdos))
 abs_cont_snpscores <- abs_snp_pc1 %>% filter(SNP %in% colnames(contdos))
 wilcox.test(abs_nmt_snpscores$SNP_scores, abs_cont_snpscores$SNP_scores, alternative = "greater")
 
-# Compute genotypic correlation distance among SNPs
-# R <- cor(dos, use = "pairwise.complete.obs")
-# gendist <- as.dist(1 - abs(cor(dos, use = "pairwise.complete.obs")))
-# rownames(gendist) == rownames(metadata)
 
-# plink --vcf cznmtcontsnps.vcf.gz --distance square ibs --out cznmtcontsnps_dist --const-fid --allow-extra-chr --autosome-num 95
-# gendist <- algatr::gen_dist(plink_file = here("data/cznmtcontsnps_dist.mibs"), plink_id_file = here("data/cznmtcontsnps_dist.mibs.id"), dist_type = "plink")
-
-
-# (6) Visualize results ---------------------------------------------------
+# (3) Visualize results ---------------------------------------------------
 
 # Two categories on x-axis, SNP scores on y
 p_scores <- 

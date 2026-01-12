@@ -1,21 +1,3 @@
-# Processing GWAS results -------------------------------------------------
-
-#' Helper function to calculate relevant GWAS statistics
-#' Adapted from M. Matz code: https://github.com/z0on/Multivariate_GWAS
-#' 
-#' @param gwas an RData object outputted from GWAS analysis
-#'
-#' @return gwas df with position in Mb and signed log p-value columns
-# gwas_stats <- function(gwas) {
-#   # Identify which Z-scores fall above 0
-#   sign = as.numeric(gwas$zscore > 0) # returns 1s and 0s for each SNP
-#   sign[sign == 0] = -1 # switches occurrences of 0s to -1s
-#   gwas$signed.logp = gwas$logp*sign # assign signs to log p-values based on Z-score results
-#   gwas$pos.Mb = gwas$pos/1e+6 # convert bp to Mb
-#   
-#   return(gwas)
-# }
-
 #' Function to visualize outlier SNPs occurring in certain regions of the genome (i.e., N-mts)
 #'
 #' @param gwas resulting object from GWAS analysis (GWAS_analysis.R script)

@@ -21,11 +21,7 @@ library(GenomicRanges) # BiocManager::install("GenomicRanges")
 ##              (4) Combine association analysis results with genome annotations
 ##              (5) Run Mann-Whitney U test on absolute betas
 ##              (6) Run Mann-Whitney U test on N-mt vs control genes
-##              (7) XXX
-
-
-# Load relevant functions
-source(here("analysis", "GWAS_functions.R"))
+##              (7) Adjusted p-values from association analysis
 
 
 # (1) Process NMT and control data ----------------------------------------
@@ -160,31 +156,6 @@ df <- data.frame(gene_id = mcols(genes_gr)$gene_id[subjectHits(hits)],
 
 nmt_correct_names <- nmtcont %>% filter(category == "nmt")
 
-# Of the 13M SNPs found in genes, how many are within N-mt genes? And within control genes?
-df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% nrow() # 37,942
-df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% nmt_correct_names$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 167
-df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% nrow() # 157,026
-df %>% mutate(row_id = row_number()) %>% filter(gene_id %in% cont$gene) %>% dplyr::select(gene_id) %>% distinct() %>% nrow() # 139
-
-# Calculate maximum absolute beta for each gene
-max_beta <- df %>%
-  group_by(gene_id) %>% 
-  summarize(max_abs_beta = max(abs_beta)) %>% 
-  # Add col with whether it's nmt or not
-  mutate(is_gene_nmt = case_when(gene_id %in% nmt_correct_names$gene ~ 1,
-                                 .default = 0))
-
-# Check to see how many nmt genes retained
-# cont has 139; nmts has 167
-max_beta %>% 
-  filter(gene_id %in% cont$gene) %>% 
-  # filter(gene_id %in% nmt_correct_names$gene) %>% 
-  nrow()
-
-# Export 23236 rows
-write_tsv(max_beta, here("data", "abs_max_beta_noflank.txt"))
-
-# ============================================================
 # Add flanking regions of +/-2Kb to genes
 genes_gr_flank <- resize(genes_gr, 
                          width = width(genes_gr) + 4000, # add 2kb to each side
@@ -273,5 +244,3 @@ dat %>% filter(pvals_adjusted_after <= 0.05)
 
 # Overall outliers
 outliers <- dat %>% filter(logp.adj >= threshold)
-
-# (8) Per-scaffold summary statistics ---------------------------------------

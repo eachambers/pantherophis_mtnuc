@@ -1,7 +1,5 @@
 ### ASSOCIATION ANALYSIS WALKTHROUGH
 
-# TODO NEED TO ADD cz_snps.geno TO OUTPUT FILES -- FROM ANGSD ALREADY???
-
 ## =============================== 1. Generate input files ===============================
 
 The association analysis takes in tables of minor allele counts for each pseudo-chromosome,
@@ -56,8 +54,7 @@ https://github.com/z0on/Multivariate_GWAS
 
 ## ================================ 3. Process the results ================================
 
-
-GWAS_processing.R
+Run the `GWAS_processing.R` script.
 
 Output:              An RData bundle containing results table for pruned SNPs (gwas) with zscores, pvalues, 
                      betas and R2, their genotypes (gt.s), genotypes of hold-out samples (if any) at the selected

@@ -4,7 +4,7 @@ library(cowplot)
 library(here)
 theme_set(theme_cowplot())
 
-## The following code generates the PCoA figure, color-coded based on NGSadmix K=4 population assignment.
+## The following code generates Figure S2, the PCoA figure, color-coded based on NGSadmix K=4 population assignment.
 
 ##    FILES REQUIRED:
 ##          bams which has the correct ordering of individuals
