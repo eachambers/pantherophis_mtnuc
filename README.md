@@ -17,22 +17,22 @@ The following is code to run analyses and generate figures from [Marshall et al.
   - Estimating N-mt and control gene trees
 
 **3. ABBA-BABA analysis:**
-    - Running ABBA-BABA analyses with Dtrios and Fstat analysis with Dinvestigate [script](XXX)
-    - Calculating mean fdM in sliding windows from fstat results [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
-    - Visualizing results ([Figs. 2B & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
+  - Running ABBA-BABA analyses with Dtrios and Fstat analysis with Dinvestigate [script](XXX)
+  - Calculating mean fdM in sliding windows from fstat results [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/ABBABABA.R))
+  - Visualizing results ([Figs. 2B & S3](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/ABBABABA_figure.R))
 
 **4. Examining topologies of gene trees:**
-    - Calculating Robinson-Foulds distances among gene trees ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists_analysis.R))
-    - Visualizing results ([Fig. 2C](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/RFdists_figure.R))
+  - Calculating Robinson-Foulds distances among gene trees ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/RFdists_analysis.R))
+  - Visualizing results ([Fig. 2C](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/RFdists_figure.R))
 
 **5. GWAS analysis:**
-    - Performing LD-pruning [script](XXX)
-    - Running the GWAS itself ([script](REFER))
-    - Processing GWAS results and getting summary statistics ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS_analysis.R))
-    - Visualizing results ([Figs. 3A & S4 & S5](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/GWAS_figures.R))
-    - Calculating SNP scores based on PCA on non-LD pruned data [script](XXX)
+  - Performing LD-pruning [script](XXX)
+  - Running the GWAS itself ([script](REFER))
+  - Processing GWAS results and getting summary statistics ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/GWAS_analysis.R))
+  - Visualizing results ([Figs. 3A & S4 & S5](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/GWAS_figures.R))
+  - Calculating SNP scores based on PCA on non-LD pruned data [script](XXX)
 
-- **Diagnostic differences:**
-    - Calculating diagnostic differences and running DAPC ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs_analysis.R))
-    - Visualizing diagnostic differences results ([Figs. 3C & 3D](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
-    - Visualizing DAPC results ([Fig. S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
+**6. Diagnostic differences:**
+  - Calculating diagnostic differences and running DAPC ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/Diagnosticdiffs_analysis.R))
+  - Visualizing diagnostic differences results ([Figs. 3C & 3D](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
+  - Visualizing DAPC results ([Fig. S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
