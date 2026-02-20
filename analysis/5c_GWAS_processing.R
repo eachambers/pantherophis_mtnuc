@@ -5,7 +5,6 @@ library(padr)
 library(data.table)
 library(GenomicRanges) # BiocManager::install("GenomicRanges")
 # library(GWASTools) # BiocManager::install("GWASTools")
-# library(scattermore) # efficient plotting of points for Manhattan plot
 
 ## The following code processes results from the GWAS analysis and merges these with the NMT and
 ## control genes.
@@ -231,7 +230,7 @@ dat$pos.Mb = dat$pos/1e+6 # convert bp to Mb
   sig_snps <- dat %>% 
     dplyr::filter(signed.logp > -log10(sig))
 
-  dat$signed.logpadj = dat$logp.adj*sign # assign signs to log p-values based on Z-score results
+dat$signed.logpadj = dat$logp.adj*sign # assign signs to log p-values based on Z-score results
 
   sig_snps_adj <- dat %>% 
     dplyr::filter(signed.logpadj > -log10(sig))

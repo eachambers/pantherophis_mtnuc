@@ -25,7 +25,7 @@ nmts <- read_tsv(here("data", "Nmt_coords.txt"), col_names = FALSE) %>%
   separate(col = sites, sep = "-", into = c("start", "end")) %>% 
   rename(gene = X2)
 nmts$start <- as.numeric(nmts$start)
-nmts$end <- as.numeric(nmts$end) # 167 genes
+nmts$end <- as.numeric(nmts$end)
 
 # Retrieve gene names from old control coordinates file
 old_cont <- read_tsv(here("data", "controls_coords.txt"), col_names = FALSE) %>% 
@@ -36,24 +36,26 @@ old_cont$start <- as.numeric(old_cont$start)
 old_cont$end <- as.numeric(old_cont$end)
 
 # Import control gene information
-cont <- read_tsv(here("data", "control_coords2.txt"), col_names = FALSE) %>% 
-  rename("chr" = X1, "start" = X2, "end" = X3)
+cont <- read_tsv(here("data", "control_coords2.txt"), col_names = TRUE)
 cont$start <- as.numeric(cont$start)
-cont$end <- as.numeric(cont$end) # 139 genes
+cont$end <- as.numeric(cont$end)
 
 cont <- left_join(cont, old_cont)
 
 
-# (2) Get summary statistics ----------------------------------------------
+# (2) Get summary statistics (Table S5) -----------------------------------
+
+nrow(cont) # 139 genes
+nrow(nmts) # 167 genes
 
 # Get total numbers of SNPs for cont and nmt datasets
 cont %>% 
   mutate(length = end-start) %>% 
-  summarize(sum(length)) # 9819152
+  summarize(sum(length)) # 9,819,152
 
 nmts %>% 
   mutate(length = end-start) %>% 
-  summarize(sum(length)) # 2348450
+  summarize(sum(length)) # 2,348,450
 
 # Now, let's get a genome-wide mean estimate for fdM for nmts and cont genes
 nmtchr <- unique(nmts$chr) # 87 unique chroms
@@ -108,15 +110,13 @@ bootstrap_rep <- function(boot_dat, prop_samp) {
   return(bs_samp)
 }
 
-nmtjoin <- read_tsv(here("data", "Joined_nmts.txt"), col_names = TRUE) %>% 
-  mutate(gene_set = "nmt") # 191
-contjoin <- read_tsv(here("data", "Joined_cont.txt"), col_names = TRUE) %>% 
-  mutate(gene_set = "control") # 67
+nmtjoin <- nmtjoin %>% mutate(gene_set = "nmt") # 191
+contjoin <- contjoin %>% mutate(gene_set = "control") # 67
 boot_dat <- bind_rows(nmtjoin, contjoin)
 
 n_reps = 10000
 
 vec <-
   replicate(n_reps, bootstrap_rep(boot_dat, prop_samp = 0.3))
-quantile(vec, probs = c(0.025, 0.975)) # -0.05308854, 0.04219925
-mean(vec) # -0.006219514
+quantile(vec, probs = c(0.025, 0.975)) # -0.05440353, 0.04223099
+mean(vec) # -0.006401501

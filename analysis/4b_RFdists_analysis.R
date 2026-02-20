@@ -5,7 +5,7 @@ library(ape)
 library(cowplot)
 
 ## The following code takes in gene trees from two sources: (1) N-mt genes (n=167) and 
-## (2) control genes (n=XXX) and compares them (by calculating Robinson-Foulds [RF] distances 
+## (2) control genes (n=139) and compares them (by calculating Robinson-Foulds [RF] distances 
 ## and average bootstrap support values) to three topologies: (1) the species tree, 
 ## (2) the mitochondrial tree, and (3) the ILS tree. It also calculates weighted RF distances 
 ## (i.e., taking into account branch lengths).
@@ -28,7 +28,7 @@ library(cowplot)
 ##              (5) Logistic regression
 
 # Load relevant functions
-source(here("analysis", "RFdists.R"))
+source(here("analysis", "4a_RFdists.R"))
 
 
 # (1) Read in input files -------------------------------------------------
@@ -141,17 +141,22 @@ logres_dat <- bind_rows(cont_results_mito, nmt_results_mito)
 mod <- glm(RF_mito ~ gene_set, 
            family = binomial(link = "logit"),
            data = logres_dat)
-
-# mod <- glm(RF_spp ~ gene_set,
-#            family = binomial(link = "logit"),
-#            data = logres_dat)
-# 
-# mod <- glm(RF_minor ~ gene_set,
-#            family = binomial(link = "logit"),
-#            data = logres_dat)
-
 summary(mod) # gene_setnmt is not statistically significant
-
 # Odds ratio
 exp(coef(mod)) # 0.9642857 for gene_setnmt; i.e., 4% decrease in topology matches in N-mts compared to control genes
+
+mod <- glm(RF_spp ~ gene_set,
+           family = binomial(link = "logit"),
+           data = logres_dat)
+summary(mod) # gene_setnmt is not statistically significant
+# Odds ratio
+exp(coef(mod)) # 0.8802935 for gene_setnmt
+
+mod <- glm(RF_minor ~ gene_set,
+           family = binomial(link = "logit"),
+           data = logres_dat)
+summary(mod) # gene_setnmt is not statistically significant
+# Odds ratio
+exp(coef(mod)) # 1.108105 for gene_setnmt
+
 
