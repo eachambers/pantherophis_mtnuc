@@ -1,5 +1,7 @@
 mamba activate mtnuc
 
+# The following script performs linkage disequilibrium pruning of N-mt and control gene datasets in contact zone samples
+
 ##          vcfs for NMTs and control loci (cznmtsnps.vcf & czcontsnps.vcf)
 ##          fastas for NMTs and control loci (cznmtsnps.min4.fasta & czcontsnps.min4.fasta) <- vcfs converted to fasta using vcf2phylip.py
 ##          mitotype assignments (cz_mitotypes.txt)
