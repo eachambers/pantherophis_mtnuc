@@ -35,4 +35,4 @@ The following is code to run analyses and generate figures from [Marshall et al.
 **6. Diagnostic differences:**
   - Performing LD-pruning on input data [script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/6a_ld_pruning.sh)
   - Calculating diagnostic differences and running DAPC ([functions](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/6b_Diagnosticdiffs.R) and [analysis script](https://github.com/eachambers/pantherophis_mtnuc/blob/main/analysis/6c_Diagnosticdiffs_analysis.R))
-  - Visualizing diagnostic differences and DAPC results ([Figs. 3C, 3D, and S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
+  - Visualizing diagnostic differences and DAPC results ([Figs. 3B, 3C, and S6](https://github.com/eachambers/pantherophis_mtnuc/blob/main/data_viz/Diagnosticdiffs_figures.R))
